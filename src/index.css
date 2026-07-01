@@ -1,0 +1,562 @@
+/* CyberSentinel AI - Amo.co Inspired Tactile Security Playground */
+:root {
+  --bg-primary: #06070d;
+  --bg-card: rgba(18, 22, 47, 0.45);
+  --border-tactile: rgba(255, 255, 255, 0.08);
+  
+  --text-primary: #ffffff;
+  --text-secondary: #cbd5e1;
+  --text-muted: #64748b;
+  
+  /* Vibrant neon tokens matching electric fluid theme */
+  --neon-cyan: #00f2fe;
+  --neon-red: #ff5e62; /* Soft premium coral-rose instead of aggressive red */
+  --neon-orange: #fda085;
+  --neon-green: #38f9d7;
+  --neon-purple: #b18efd;
+  
+  /* Vibrant gradients for amo-style consumer tech look */
+  --grad-cyan: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+  --grad-pink: linear-gradient(135deg, #ff5e62 0%, #ffb199 100%); /* Soft rose-coral */
+  --grad-green: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  --grad-orange: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+  --grad-purple: linear-gradient(135deg, #b18efd 0%, #f1a9ff 100%);
+  --grad-blue: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  
+  /* Bouncy spring transitions */
+  --spring-transition: all 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  padding-bottom: 40px;
+}
+
+/* Floating animated aurora spheres */
+.aurora-sphere {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(140px);
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.65;
+  transition: all 5s ease-in-out;
+}
+.sphere-1 {
+  width: 450px;
+  height: 450px;
+  background: rgba(0, 242, 254, 0.14);
+  top: -120px;
+  left: -120px;
+  animation: float-aurora-1 25s infinite alternate ease-in-out;
+}
+.sphere-2 {
+  width: 550px;
+  height: 550px;
+  background: rgba(177, 142, 253, 0.12);
+  top: 15%;
+  right: -180px;
+  animation: float-aurora-2 30s infinite alternate ease-in-out;
+}
+.sphere-3 {
+  width: 500px;
+  height: 500px;
+  background: rgba(56, 249, 215, 0.08);
+  bottom: -150px;
+  left: 25%;
+  animation: float-aurora-3 28s infinite alternate ease-in-out;
+}
+
+@keyframes float-aurora-1 {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(90px, 60px) scale(1.15); }
+}
+@keyframes float-aurora-2 {
+  0% { transform: translate(0, 0) scale(1.1); }
+  100% { transform: translate(-120px, 90px) scale(0.9); }
+}
+@keyframes float-aurora-3 {
+  0% { transform: translate(0, 0) scale(0.9); }
+  100% { transform: translate(70px, -80px) scale(1.12); }
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 242, 254, 0.4);
+}
+
+.tech-font {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.mono-font {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+}
+
+/* Playful grid & layouts */
+.cyber-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 24px;
+  max-width: 1440px;
+  margin: 0 auto;
+  gap: 24px;
+  position: relative;
+  z-index: 10;
+}
+
+/* 12-Column Grid system fixed */
+.cyber-grid-container {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 24px;
+  width: 100%;
+}
+
+/* Amo-Style Floating Pill Navbar */
+.cyber-header {
+  background: rgba(18, 22, 47, 0.6);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--border-tactile);
+  border-radius: 28px;
+  padding: 12px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4);
+  position: relative;
+  z-index: 50;
+  transition: var(--spring-transition);
+}
+
+.cyber-title {
+  font-weight: 900;
+  font-size: 1.5rem;
+  letter-spacing: -1px;
+  background: linear-gradient(135deg, #ffffff 40%, #b18efd 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Tactile Navigation Pill Tabs */
+.cyber-tabs {
+  display: flex;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 4px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  gap: 2px;
+}
+
+.cyber-tab {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-weight: 700;
+  padding: 10px 20px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: var(--spring-transition);
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cyber-tab:hover {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.cyber-tab.active {
+  background: #ffffff;
+  color: #06070d;
+  box-shadow: 0 10px 25px -5px rgba(255, 255, 255, 0.2);
+}
+
+/* Amo-Inspired Tactile Wobbly Cards */
+.cyber-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-tactile);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.6);
+  position: relative;
+  overflow: hidden;
+  transition: var(--spring-transition);
+}
+
+.cyber-panel:hover {
+  transform: translateY(-6px) scale(1.01) rotate(0.5deg);
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 40px 80px -15px rgba(0, 0, 0, 0.8);
+}
+
+/* Bouncy Tactile Buttons */
+.cyber-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-tactile);
+  color: var(--text-primary);
+  font-weight: 700;
+  padding: 12px 24px;
+  border-radius: 18px;
+  cursor: pointer;
+  transition: var(--spring-transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.cyber-btn:hover {
+  background: #ffffff;
+  color: #06070d;
+  border-color: #ffffff;
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 15px 30px -5px rgba(255, 255, 255, 0.35);
+}
+
+.cyber-btn:active {
+  transform: translateY(-1px) scale(0.98);
+}
+
+.cyber-btn-secondary {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-secondary);
+}
+
+.cyber-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text-primary);
+  box-shadow: none;
+  transform: translateY(-2px);
+}
+
+.cyber-btn-danger {
+  border: none;
+  background: var(--grad-pink);
+  color: #ffffff;
+}
+
+.cyber-btn-danger:hover {
+  background: var(--grad-pink);
+  color: #ffffff;
+  box-shadow: 0 12px 25px -5px rgba(255, 8, 68, 0.4);
+}
+
+.cyber-btn-success {
+  border: none;
+  background: var(--grad-green);
+  color: #06070d;
+}
+
+.cyber-btn-success:hover {
+  background: var(--grad-green);
+  color: #06070d;
+  box-shadow: 0 12px 25px -5px rgba(67, 233, 123, 0.4);
+}
+
+/* Playful Tactile Inputs */
+.cyber-input {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1.5px solid rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+  padding: 16px;
+  border-radius: 18px;
+  width: 100%;
+  transition: var(--spring-transition);
+  font-size: 0.85rem;
+}
+
+.cyber-input:focus {
+  outline: none;
+  border-color: #00f2fe;
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 20px rgba(0, 242, 254, 0.25);
+  transform: scale(1.01);
+}
+
+.cyber-select {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  font-weight: 700;
+  padding: 12px 18px;
+  border-radius: 16px;
+  cursor: pointer;
+  outline: none;
+  transition: var(--spring-transition);
+}
+
+.cyber-select:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Glossy Stickers/Badges */
+.cyber-badge {
+  font-size: 0.72rem;
+  padding: 6px 14px;
+  border-radius: 30px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.cyber-badge-cyan {
+  background: var(--grad-cyan);
+  color: #06070d;
+}
+
+.cyber-badge-green {
+  background: var(--grad-green);
+  color: #06070d;
+}
+
+.cyber-badge-orange {
+  background: var(--grad-orange);
+  color: #06070d;
+}
+
+.cyber-badge-red {
+  background: var(--grad-pink);
+  color: #ffffff;
+}
+
+/* Stat Widgets with resizing pops and constraints */
+.stat-card {
+  padding: 20px !important;
+  min-height: 140px;
+}
+
+.stat-widget {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.stat-value {
+  font-size: 2.3rem;
+  line-height: 1.1;
+  font-weight: 900;
+  letter-spacing: -1.5px;
+  margin: 6px 0;
+  background: linear-gradient(135deg, #ffffff 30%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transition: var(--spring-transition);
+}
+
+.cyber-panel:hover .stat-value {
+  transform: scale(1.05) translateX(2px);
+}
+
+/* Slide/Fade animation keyframe */
+.fade-in {
+  animation: slideFade 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes slideFade {
+  from { opacity: 0; transform: translateY(15px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Cyber Map Vector Lines */
+.map-link-dash {
+  stroke-dasharray: 6, 6;
+  animation: dash-movement 12s linear infinite;
+}
+
+@keyframes dash-movement {
+  to {
+    stroke-dashoffset: -60;
+  }
+}
+
+/* Interactive SOC Radar pulse */
+@keyframes heart-pulse {
+  0% { transform: scale(1); filter: drop-shadow(0 0 4px rgba(0,242,254,0.4)); }
+  50% { transform: scale(1.2); filter: drop-shadow(0 0 12px rgba(0,242,254,0.8)); }
+  100% { transform: scale(1); filter: drop-shadow(0 0 4px rgba(0,242,254,0.4)); }
+}
+
+.system-pulse-indicator {
+  animation: heart-pulse 2s infinite ease-in-out;
+}
+
+/* Skiper UI Hover Members Clone Styles */
+.skiper-hero-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 28px;
+  background: radial-gradient(circle at center, rgba(18, 22, 47, 0.35) 0%, rgba(6, 7, 13, 0.9) 100%) !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 44px 20px;
+  min-height: 290px;
+  width: 100%;
+}
+
+.skiper-facepile {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 10;
+}
+
+.skiper-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  border: 3px solid #06070d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.5);
+  margin-left: -15px;
+  position: relative;
+  z-index: 5;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.skiper-avatar:first-child {
+  margin-left: 0;
+}
+
+.skiper-giant-text {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 4.8rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -4px;
+  line-height: 0.95;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.05);
+  user-select: none;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  margin-bottom: 12px;
+  width: 100%;
+  white-space: nowrap;
+}
+
+.skiper-giant-text.active {
+  color: #ffffff;
+  letter-spacing: -1.5px;
+  text-shadow: 0 0 35px rgba(255, 255, 255, 0.15);
+}
+
+.skiper-description {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  text-align: center;
+  z-index: 10;
+  min-height: 20px;
+  transition: all 0.3s ease;
+}
+
+/* ==========================================================================
+   Skiper UI v1/skiper7 - Dynamic Rising Liquid Gradient Wave Backdrop Styles
+   ========================================================================== */
+.landing-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 100vh;
+  padding: 24px;
+  background: #030408;
+  position: relative;
+  overflow: hidden;
+}
+
+.smoke-fluid-wrapper {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 52%;
+  overflow: hidden;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.smoke-fluid-wrapper svg {
+  position: absolute;
+  bottom: -40px;
+  left: -2%;
+  width: 104%;
+  height: 100%;
+  filter: blur(28px);
+  transform-origin: bottom center;
+  pointer-events: none;
+}
+
+.wave-layer-1 {
+  animation: wave-motion-1 16s infinite alternate ease-in-out;
+}
+.wave-layer-2 {
+  animation: wave-motion-2 20s infinite alternate ease-in-out;
+}
+.wave-layer-3 {
+  animation: wave-motion-3 13s infinite alternate ease-in-out;
+}
+
+@keyframes wave-motion-1 {
+  0% { transform: scaleY(1.0) scaleX(1.0) rotate(0deg); }
+  100% { transform: scaleY(1.12) scaleX(1.04) rotate(1.5deg); }
+}
+@keyframes wave-motion-2 {
+  0% { transform: scaleY(1.05) scaleX(1.0) rotate(0deg); }
+  100% { transform: scaleY(0.92) scaleX(1.06) rotate(-1.5deg); }
+}
+@keyframes wave-motion-3 {
+  0% { transform: scaleY(0.96) scaleX(1.03) rotate(-1deg); }
+  100% { transform: scaleY(1.1) scaleX(0.97) rotate(1deg); }
+}
