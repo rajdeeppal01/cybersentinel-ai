@@ -36,8 +36,12 @@ const INITIAL_ALERTS: SecurityEvent[] = [
 ];
 
 export default function App() {
-  const [view, setView] = useState<'landing' | 'hub'>('landing');
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [view, setView] = useState<'landing' | 'hub'>(() => {
+    return (localStorage.getItem('cs_view') as 'landing' | 'hub') || 'landing';
+  });
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    return localStorage.getItem('cs_active_tab') || 'dashboard';
+  });
   const [alerts, setAlerts] = useState<SecurityEvent[]>(INITIAL_ALERTS);
   const [analyzerLogText, setAnalyzerLogText] = useState<string>('');
   const [currentTime, setCurrentTime] = useState<string>('');
@@ -48,6 +52,14 @@ export default function App() {
     'GDPR': 40,
     'HIPAA': 30
   });
+
+  useEffect(() => {
+    localStorage.setItem('cs_view', view);
+  }, [view]);
+
+  useEffect(() => {
+    localStorage.setItem('cs_active_tab', activeTab);
+  }, [activeTab]);
 
   // Clock update
   useEffect(() => {
@@ -277,38 +289,38 @@ export default function App() {
           </header>
 
           {/* Main App Content Viewport */}
-          <main style={{ flex: 1, position: 'relative' }} className="fade-in" key={activeTab}>
-            {activeTab === 'dashboard' && (
+          <main style={{ flex: 1, position: 'relative' }} className="fade-in">
+            <div style={{ display: activeTab === 'dashboard' ? 'block' : 'none' }}>
               <Dashboard 
                 alerts={alerts} 
                 onAnalyze={handleAnalyzeLogFromFeed} 
                 setActiveTab={setActiveTab} 
                 complianceScores={complianceScores}
               />
-            )}
+            </div>
             
-            {activeTab === 'analyzer' && (
+            <div style={{ display: activeTab === 'analyzer' ? 'block' : 'none' }}>
               <ThreatAnalyzer initialLogText={analyzerLogText} />
-            )}
+            </div>
 
-            {activeTab === 'phishing' && (
+            <div style={{ display: activeTab === 'phishing' ? 'block' : 'none' }}>
               <PhishingGuard />
-            )}
+            </div>
 
-            {activeTab === 'grc' && (
+            <div style={{ display: activeTab === 'grc' ? 'block' : 'none' }}>
               <ComplianceAuditor 
                 complianceScores={complianceScores}
                 onUpdateScore={handleUpdateComplianceScore}
               />
-            )}
+            </div>
 
-            {activeTab === 'risks' && (
+            <div style={{ display: activeTab === 'risks' ? 'block' : 'none' }}>
               <RiskRegister />
-            )}
+            </div>
 
-            {activeTab === 'sandbox' && (
+            <div style={{ display: activeTab === 'sandbox' ? 'block' : 'none' }}>
               <AttackSandbox onTriggerAlert={handleTriggerAlert} />
-            )}
+            </div>
           </main>
 
           {/* Ticker SOC Footer */}

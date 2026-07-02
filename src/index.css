@@ -266,6 +266,18 @@ body {
   transform: translateY(-2px);
 }
 
+.cyber-btn-primary {
+  border: none;
+  background: var(--grad-cyan);
+  color: #06070d;
+}
+
+.cyber-btn-primary:hover {
+  background: var(--grad-cyan);
+  color: #06070d;
+  box-shadow: 0 12px 25px -5px rgba(0, 242, 254, 0.4);
+}
+
 .cyber-btn-danger {
   border: none;
   background: var(--grad-pink);

@@ -88,11 +88,11 @@ export default function Dashboard({ alerts, onAnalyze, setActiveTab, complianceS
   };
 
   const nodeAlertDetails: Record<string, string> = {
-    'HQ_US': 'Active Shielding: Deflecting port scanner inquiries targeting production SQL DBs.',
-    'EU_WEST': 'Clear Telemetry: Encrypted VPN lines healthy. No anomalies detected.',
-    'DDOS_DST': 'DDOS Alert: Ingesting high frequency packets (120k requests/sec) originating from BOTNET_SRC.',
-    'SOC_CORE': 'SOC Operations Hub: Ingestion rate active at 4.2ms correlation latency.',
-    'BOTNET_SRC': 'Malicious Cluster: Flagged crawler cluster harvesting login endpoints.'
+    'MUMBAI_HQ': 'Mumbai Workstation: Main local developer environment active on port 3000.',
+    'LOCAL_HOST': 'Localhost: Core dev server running Vite HMR telemetry.',
+    'GATEWAY_MUM': 'Gateway Router: Firewall monitoring active for local subnet 192.168.1.0/24.',
+    'WAN_LINK': 'WAN Uplink: Standard internet traffic. No external anomalies detected.',
+    'THREAT_SRC': 'Sandbox Source: Simulated attack vectors originating from containment container.'
   };
 
   const renderDial = (value: number, label: string, gradientId: string, color1: string, color2: string) => {
@@ -241,12 +241,12 @@ export default function Dashboard({ alerts, onAnalyze, setActiveTab, complianceS
       <div className="cyber-panel" style={{ gridColumn: 'span 8', height: '410px', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h3 className="tech-font" style={{ fontSize: '0.95rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Globe style={{ width: '18px', height: '18px', color: '#4facfe' }} /> ACTIVE SOC GEO-TARGETS (TAP NODES)
+            <Globe style={{ width: '18px', height: '18px', color: '#4facfe' }} /> LOCAL INTRANET TOPOLOGY (TAP NODES)
           </h3>
           <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Tap any system node to inspect live logs</span>
         </div>
         
-        {/* SVG World Map Vector Representation */}
+        {/* SVG Intranet Map Vector Representation */}
         <div style={{ flex: 1, position: 'relative', background: 'radial-gradient(circle at center, #0e122a 0%, #06070f 100%)', borderRadius: '20px', border: '1.5px solid rgba(255, 255, 255, 0.05)', overflow: 'hidden' }}>
           <svg viewBox="0 0 800 280" style={{ width: '100%', height: '100%' }}>
             <defs>
@@ -256,10 +256,11 @@ export default function Dashboard({ alerts, onAnalyze, setActiveTab, complianceS
             </defs>
             <rect width="100%" height="100%" fill="url(#map-grid)" />
 
-            {/* Curved connections */}
-            <path d="M 620,90 Q 450,45 320,130" fill="none" stroke="url(#line-red-grad)" strokeWidth="2.5" className="map-link-dash" />
-            <path d="M 150,90 Q 220,155 320,130" fill="none" stroke="url(#line-orange-grad)" strokeWidth="2" className="map-link-dash" />
-            <path d="M 280,180 Q 400,165 510,130" fill="none" stroke="url(#line-cyan-grad)" strokeWidth="2" className="map-link-dash" />
+            {/* Topology connections */}
+            <path d="M 150,140 L 300,140" fill="none" stroke="url(#line-cyan-grad)" strokeWidth="2.5" className="map-link-dash" />
+            <path d="M 300,140 L 450,140" fill="none" stroke="url(#line-cyan-grad)" strokeWidth="2.5" className="map-link-dash" />
+            <path d="M 450,140 Q 525,110 600,80" fill="none" stroke="url(#line-orange-grad)" strokeWidth="2.0" className="map-link-dash" />
+            <path d="M 450,140 Q 525,170 600,200" fill="none" stroke="url(#line-red-grad)" strokeWidth="2.5" className="map-link-dash" />
 
             <defs>
               <linearGradient id="line-red-grad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -276,48 +277,47 @@ export default function Dashboard({ alerts, onAnalyze, setActiveTab, complianceS
               </linearGradient>
             </defs>
 
-            {/* Interactive circles/nodes */}
-            {/* HQ_US */}
-            <g style={{ cursor: 'pointer' }} onClick={() => setSelectedNode('HQ_US')}>
-              <circle cx="150" cy="90" r="8" fill={selectedNode === 'HQ_US' ? '#00f2fe' : '#4facfe'} opacity="0.3" />
-              <circle cx="150" cy="90" r="5" fill="#00f2fe" />
-              <text x="162" y="94" fill="#cbd5e1" fontSize="9" fontWeight="800" className="tech-font">HQ_US</text>
+            {/* LOCAL_HOST */}
+            <g style={{ cursor: 'pointer' }} onClick={() => setSelectedNode('LOCAL_HOST')}>
+              <circle cx="150" cy="140" r="8" fill={selectedNode === 'LOCAL_HOST' ? '#00f2fe' : '#4facfe'} opacity="0.3" />
+              <circle cx="150" cy="140" r="5" fill="#00f2fe" />
+              <text x="120" y="165" fill="#cbd5e1" fontSize="9" fontWeight="800" className="tech-font">LOCAL_HOST</text>
             </g>
 
-            {/* EU_WEST */}
-            <g style={{ cursor: 'pointer' }} onClick={() => setSelectedNode('EU_WEST')}>
-              <circle cx="380" cy="80" r="8" fill={selectedNode === 'EU_WEST' ? '#00f2fe' : '#4facfe'} opacity="0.3" />
-              <circle cx="380" cy="80" r="5" fill="#4facfe" />
-              <text x="392" y="84" fill="#cbd5e1" fontSize="9" fontWeight="800" className="tech-font">EU_WEST</text>
+            {/* MUMBAI_HQ */}
+            <g style={{ cursor: 'pointer' }} onClick={() => setSelectedNode('MUMBAI_HQ')}>
+              <circle cx="300" cy="140" r="8" fill={selectedNode === 'MUMBAI_HQ' ? '#00f2fe' : '#4facfe'} opacity="0.3" />
+              <circle cx="300" cy="140" r="5" fill="#4facfe" />
+              <text x="270" y="165" fill="#cbd5e1" fontSize="9" fontWeight="800" className="tech-font">MUMBAI_HQ</text>
             </g>
 
-            {/* DDOS_DST */}
-            <g style={{ cursor: 'pointer' }} onClick={() => setSelectedNode('DDOS_DST')}>
-              <circle cx="620" cy="90" r="14" fill="#ff0844" style={{ animation: 'pulse-ring 2.5s infinite' }} opacity="0.4" />
-              <circle cx="620" cy="90" r="6" fill="#ff0844" />
-              <text x="634" y="94" fill="#ff527b" fontSize="9" fontWeight="800" className="tech-font">DDOS_DST</text>
+            {/* GATEWAY_MUM */}
+            <g style={{ cursor: 'pointer' }} onClick={() => setSelectedNode('GATEWAY_MUM')}>
+              <circle cx="450" cy="140" r="10" fill="#38f9d7" opacity="0.3" />
+              <circle cx="450" cy="140" r="6" fill="#38f9d7" />
+              <text x="415" y="165" fill="#ffffff" fontSize="9" fontWeight="800" className="tech-font">GATEWAY_MUM</text>
             </g>
 
-            {/* SOC_CORE */}
-            <g style={{ cursor: 'pointer' }} onClick={() => setSelectedNode('SOC_CORE')}>
-              <circle cx="510" cy="130" r="10" fill="#38f9d7" opacity="0.3" />
-              <circle cx="510" cy="130" r="6" fill="#38f9d7" />
-              <text x="522" y="134" fill="#ffffff" fontSize="9" fontWeight="800" className="tech-font">SOC_CORE</text>
+            {/* WAN_LINK */}
+            <g style={{ cursor: 'pointer' }} onClick={() => setSelectedNode('WAN_LINK')}>
+              <circle cx="600" cy="80" r="8" fill={selectedNode === 'WAN_LINK' ? '#00f2fe' : '#4facfe'} opacity="0.3" />
+              <circle cx="600" cy="80" r="5" fill="#00f2fe" />
+              <text x="575" y="65" fill="#cbd5e1" fontSize="9" fontWeight="800" className="tech-font">WAN_LINK</text>
             </g>
 
-            {/* BOTNET_SRC */}
-            <g style={{ cursor: 'pointer' }} onClick={() => setSelectedNode('BOTNET_SRC')}>
-              <circle cx="280" cy="180" r="8" fill={selectedNode === 'BOTNET_SRC' ? '#ffb199' : '#fda085'} opacity="0.3" />
-              <circle cx="280" cy="180" r="5" fill="#fda085" />
-              <text x="292" y="184" fill="#fda085" fontSize="9" fontWeight="800" className="tech-font">BOTNET_SRC</text>
+            {/* THREAT_SRC */}
+            <g style={{ cursor: 'pointer' }} onClick={() => setSelectedNode('THREAT_SRC')}>
+              <circle cx="600" cy="200" r="14" fill="#ff0844" style={{ animation: 'pulse-ring 2.5s infinite' }} opacity="0.4" />
+              <circle cx="600" cy="200" r="6" fill="#ff0844" />
+              <text x="565" y="228" fill="#ff527b" fontSize="9" fontWeight="800" className="tech-font">THREAT_SRC</text>
             </g>
           </svg>
 
           {/* Interactive Bouncy Node Dialog overlay */}
           <div style={{ position: 'absolute', bottom: '15px', left: '15px', right: '15px', background: 'rgba(12, 16, 38, 0.85)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '14px', padding: '12px 18px', display: 'flex', alignItems: 'center', gap: '12px', transition: 'var(--spring-transition)' }}>
-            <span className={selectedNode === 'DDOS_DST' || selectedNode === 'BOTNET_SRC' ? 'pulse-dot-red' : 'pulse-dot-cyan'}></span>
+            <span className={selectedNode === 'THREAT_SRC' ? 'pulse-dot-red' : 'pulse-dot-cyan'}></span>
             <span style={{ fontSize: '0.8rem', color: '#fff', fontWeight: '700' }} className="tech-font">
-              {selectedNode ? `[${selectedNode}] - ${nodeAlertDetails[selectedNode]}` : '[SYSTEM STATUS] - Click on any node dot above to audit active system alerts.'}
+              {selectedNode ? `[${selectedNode}] - ${nodeAlertDetails[selectedNode]}` : '[SYSTEM STATUS] - Click on any topological node above to audit live network statistics.'}
             </span>
           </div>
         </div>

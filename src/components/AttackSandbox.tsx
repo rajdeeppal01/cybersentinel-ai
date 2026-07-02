@@ -146,6 +146,19 @@ export default function AttackSandbox({ onTriggerAlert }: AttackSandboxProps) {
   const [runningAttack, setRunningAttack] = useState<string | null>(null);
   const [completedReport, setCompletedReport] = useState<AttackTemplate | null>(null);
   const consoleContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Custom Attack states
+  const [editorMode, setEditorMode] = useState<'presets' | 'custom'>('presets');
+  const [customName, setCustomName] = useState('Custom Intrusion Scan');
+  const [customSeverity, setCustomSeverity] = useState<'low' | 'medium' | 'high' | 'critical'>('high');
+  const [customProtocol, setCustomProtocol] = useState<'TCP' | 'UDP' | 'HTTP' | 'SSH' | 'DNS' | 'ICMP'>('TCP');
+  const [customScript, setCustomScript] = useState(
+    `# Custom exploit execution script
+ping -c 4 127.0.0.1
+nmap -sS -p 22,80,443 localhost
+curl -X POST -d "user=admin&pass=root" http://localhost:3000/api/auth
+cat /etc/passwd`
+  );
 
   // Auto-scroll terminal container locally without shifting the window viewport
   useEffect(() => {
@@ -190,6 +203,44 @@ export default function AttackSandbox({ onTriggerAlert }: AttackSandboxProps) {
     }, 450);
   };
 
+  const handleLaunchCustomAttack = () => {
+    if (runningAttack) return;
+    
+    // Split the custom script by newline and filter empty lines
+    const lines = customScript.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    const terminalLogs = lines.map(line => {
+      if (line.startsWith('#')) {
+        return `[INFO] ${line.substring(1).trim()}`;
+      }
+      return `[sandbox@agent:~]$ ${line}`;
+    });
+    
+    terminalLogs.push(`[ALERT] AI Endpoint Protection Agent intercepted custom command sequence!`);
+    terminalLogs.push(`[GRC WARNING] Compliance risk flag triggered: NIST CSF PR.IP-4 / SOC 2 CC7.1`);
+
+    const customTemplate: AttackTemplate = {
+      name: customName,
+      type: 'Custom',
+      description: 'User-defined penetration payload executing dynamically.',
+      severity: customSeverity,
+      signature: `Custom Attack: Command execution targeting ${customProtocol}`,
+      mitreCode: 'T1059',
+      complianceFailure: 'NIST CSF PR.IP-4 / SOC 2 CC7.1',
+      sourceIp: '192.168.1.55',
+      destIp: '127.0.0.1',
+      protocol: customProtocol,
+      terminalLogs,
+      plainEnglishReport: {
+        whatWasRun: `A custom security penetration script named "${customName}" was written and executed inside the sandboxed environment. The script executed commands utilizing the ${customProtocol} protocol.`,
+        whatItUncovered: `The script ran the following command parameters in sequence:\n${lines.map(l => `  - \`${l}\``).join('\n')}\nThe terminal audited raw diagnostic logs and caught anomalous execution activity.`,
+        complianceImpact: `Triggers compliance checks under NIST CSF guidelines and SOC 2 Trust Principles (Security & Monitoring) for unauthorized local shell command telemetry.`,
+        remediation: `Restructure access control configurations to restrict non-administrative local accounts from spawning high-privilege shell terminals. Enforce strict logging controls on localhost terminal telemetry.`
+      }
+    };
+
+    handleLaunchAttack(customTemplate);
+  };
+
   const handleClearTerminal = () => {
     setConsoleLogs(['[SYSTEM-SOC] Terminal terminal cleared. Ready for exploitation...']);
     setCompletedReport(null);
@@ -203,58 +254,161 @@ export default function AttackSandbox({ onTriggerAlert }: AttackSandboxProps) {
         <h3 className="tech-font" style={{ fontSize: '0.9rem', color: 'var(--neon-cyan)', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Layers style={{ width: '16px', height: '16px' }} /> ATTACK SIMULATOR SUITE
         </h3>
-        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-          Select and launch security breach payloads. The terminal outputs execution trails, showing how the AI correlation rules instantly intercept indicators and log GRC control violations.
-        </p>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, overflowY: 'auto' }}>
-          {ATTACK_TEMPLATES.map((item, index) => (
-            <div 
-              key={index}
-              style={{ 
-                background: '#070b15', 
-                border: runningAttack === item.name ? '1px solid var(--neon-red)' : '1px solid rgba(0,240,255,0.08)',
-                padding: '12px', 
-                borderRadius: '4px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-                transition: 'all 0.3s'
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="tech-font" style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#fff' }}>
-                  {item.name}
-                </span>
-                <span className={`cyber-badge ${
-                  item.severity === 'critical' ? 'cyber-badge-red' :
-                  item.severity === 'high' ? 'cyber-badge-orange' :
-                  item.severity === 'medium' ? 'cyber-badge-cyan' :
-                  'cyber-badge-green'
-                }`} style={{ fontSize: '0.6rem' }}>
-                  {item.severity}
-                </span>
-              </div>
-              <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                {item.description}
-              </p>
-              
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.65rem', color: 'var(--text-muted)', borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: '8px', marginTop: '3px' }}>
-                <span>Impact: <strong style={{ color: 'var(--neon-orange)' }}>{item.mitreCode}</strong></span>
-                <span>Audit: <strong style={{ color: 'var(--neon-cyan)' }}>{item.complianceFailure.split(' / ')[0]}</strong></span>
-              </div>
-
-              <button 
-                className="cyber-btn cyber-btn-danger"
-                style={{ width: '100%', padding: '6px', fontSize: '0.7rem', marginTop: '5px' }}
-                onClick={() => handleLaunchAttack(item)}
-                disabled={!!runningAttack}
-              >
-                <Play style={{ width: '12px', height: '12px' }} /> Launch Attack Vector
-              </button>
-            </div>
-          ))}
+        
+        {/* Editor Mode Tabs */}
+        <div style={{ display: 'flex', gap: '5px', background: '#050811', padding: '3px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <button
+            style={{
+              flex: 1,
+              padding: '6px',
+              fontSize: '0.7rem',
+              background: editorMode === 'presets' ? 'rgba(0, 240, 255, 0.1)' : 'none',
+              border: 'none',
+              color: editorMode === 'presets' ? '#00f2fe' : 'var(--text-muted)',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              borderRadius: '3px',
+              transition: 'all 0.3s'
+            }}
+            onClick={() => setEditorMode('presets')}
+          >
+            PRESET VECTORS
+          </button>
+          <button
+            style={{
+              flex: 1,
+              padding: '6px',
+              fontSize: '0.7rem',
+              background: editorMode === 'custom' ? 'rgba(0, 240, 255, 0.1)' : 'none',
+              border: 'none',
+              color: editorMode === 'custom' ? '#00f2fe' : 'var(--text-muted)',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              borderRadius: '3px',
+              transition: 'all 0.3s'
+            }}
+            onClick={() => setEditorMode('custom')}
+          >
+            CUSTOM BUILDER
+          </button>
         </div>
+
+        {editorMode === 'presets' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, overflowY: 'auto' }}>
+            {ATTACK_TEMPLATES.map((item, index) => (
+              <div 
+                key={index}
+                style={{ 
+                  background: '#070b15', 
+                  border: runningAttack === item.name ? '1px solid var(--neon-red)' : '1px solid rgba(0,240,255,0.08)',
+                  padding: '12px', 
+                  borderRadius: '4px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  transition: 'all 0.3s'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span className="tech-font" style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#fff' }}>
+                    {item.name}
+                  </span>
+                  <span className={`cyber-badge ${
+                    item.severity === 'critical' ? 'cyber-badge-red' :
+                    item.severity === 'high' ? 'cyber-badge-orange' :
+                    item.severity === 'medium' ? 'cyber-badge-cyan' :
+                    'cyber-badge-green'
+                  }`} style={{ fontSize: '0.6rem' }}>
+                    {item.severity}
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                  {item.description}
+                </p>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.65rem', color: 'var(--text-muted)', borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: '8px', marginTop: '3px' }}>
+                  <span>Impact: <strong style={{ color: 'var(--neon-orange)' }}>{item.mitreCode}</strong></span>
+                  <span>Audit: <strong style={{ color: 'var(--neon-cyan)' }}>{item.complianceFailure.split(' / ')[0]}</strong></span>
+                </div>
+
+                <button 
+                  className="cyber-btn cyber-btn-primary"
+                  style={{ width: '100%', padding: '6px', fontSize: '0.7rem', marginTop: '5px' }}
+                  onClick={() => handleLaunchAttack(item)}
+                  disabled={!!runningAttack}
+                >
+                  <Play style={{ width: '12px', height: '12px' }} /> Launch Attack Vector
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Attack Vector Name:</label>
+                <input 
+                  className="cyber-input" 
+                  style={{ fontSize: '0.75rem', padding: '6px', width: '100%' }}
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Severity:</label>
+                <select 
+                  className="cyber-input" 
+                  style={{ fontSize: '0.75rem', padding: '5px', background: '#070b15', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', width: '80px', height: '28px' }}
+                  value={customSeverity}
+                  onChange={(e: any) => setCustomSeverity(e.target.value)}
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="critical">Critical</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Target Protocol:</label>
+                <select 
+                  className="cyber-input" 
+                  style={{ fontSize: '0.75rem', padding: '5px', background: '#070b15', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', width: '100%', height: '28px' }}
+                  value={customProtocol}
+                  onChange={(e: any) => setCustomProtocol(e.target.value)}
+                >
+                  <option value="TCP">TCP</option>
+                  <option value="UDP">UDP</option>
+                  <option value="HTTP">HTTP</option>
+                  <option value="SSH">SSH</option>
+                  <option value="DNS">DNS</option>
+                  <option value="ICMP">ICMP</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <label style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Sandbox Script Commands (one command per line):</label>
+              <textarea
+                className="cyber-input mono-font"
+                style={{ flex: 1, minHeight: '140px', fontSize: '0.7rem', resize: 'none', background: '#050811', border: '1px solid var(--panel-border)', lineHeight: '1.4', padding: '8px', color: '#38f9d7' }}
+                value={customScript}
+                onChange={(e) => setCustomScript(e.target.value)}
+              />
+            </div>
+
+            <button 
+              className="cyber-btn cyber-btn-primary"
+              style={{ width: '100%', padding: '8px', fontSize: '0.75rem', marginTop: '5px' }}
+              onClick={handleLaunchCustomAttack}
+              disabled={!!runningAttack}
+            >
+              <Play style={{ width: '12px', height: '12px' }} /> Fire Custom Script Payload
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Interactive Terminal Panel */}
