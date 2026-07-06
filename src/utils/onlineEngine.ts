@@ -1,4 +1,4 @@
-import { LogAnalysisResult, PhishingAnalysisResult } from "./aiEngine";
+import { LogAnalysisResult, PhishingAnalysisResult, PolicyAuditResult } from "./aiEngine";
 
 const GEMINI_ENDPOINT =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
@@ -128,6 +128,77 @@ export async function analyzeEmailWithGemini(
 
   try {
     return JSON.parse(cleaned);
+  } catch {
+    throw new OnlineEngineError("Gemini returned a response we couldn't parse.");
+  }
+}
+
+const POLICY_SYSTEM_PROMPT = `You are a senior GRC auditor providing a second-opinion review of a security policy
+draft against a named compliance framework.
+Respond with ONLY a single JSON object (no markdown, no backticks, no preamble) matching exactly this shape:
+
+{
+  "overallScore": number (0-100),
+  "status": "Compliant" | "Partial" | "Non-Compliant",
+  "gaps": [
+    {
+      "controlId": string,
+      "title": string,
+      "description": string,
+      "severity": "high" | "medium" | "low",
+      "finding": string,
+      "suggestedWording": string
+    }
+  ],
+  "summary": string
+}
+
+"gaps" should be an empty array if fully compliant. Base findings only on what's actually present or
+missing in the given policy text.`;
+
+export async function analyzePolicyWithGemini(
+  policyText: string,
+  framework: string,
+  apiKey: string
+): Promise<PolicyAuditResult> {
+  if (!apiKey.trim()) {
+    throw new OnlineEngineError("No API key provided.");
+  }
+
+  const response = await fetch(`${GEMINI_ENDPOINT}?key=${encodeURIComponent(apiKey)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [{ text: `${POLICY_SYSTEM_PROMPT}\n\nFRAMEWORK: ${framework}\n\nPOLICY TEXT:\n${policyText}` }],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.2,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    if (response.status === 400 || response.status === 403) {
+      throw new OnlineEngineError("That API key looks invalid or lacks permission.");
+    }
+    if (response.status === 429) {
+      throw new OnlineEngineError("Rate limit hit on this API key. Try again shortly.");
+    }
+    throw new OnlineEngineError(`Gemini request failed (status ${response.status}).`);
+  }
+
+  const data = await response.json();
+  const rawText: string =
+    data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  const cleaned = rawText.replace(/```json|```/g, "").trim();
+
+  try {
+    const parsed = JSON.parse(cleaned);
+    parsed.framework = framework;
+    return parsed;
   } catch {
     throw new OnlineEngineError("Gemini returned a response we couldn't parse.");
   }

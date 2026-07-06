@@ -1,5 +1,5 @@
 import { CreateMLCEngine, MLCEngine } from "@mlc-ai/web-llm";
-import { LogAnalysisResult, PhishingAnalysisResult } from "./aiEngine";
+import { LogAnalysisResult, PhishingAnalysisResult, PolicyAuditResult } from "./aiEngine";
 
 const MODEL_ID = "Qwen2.5-1.5B-Instruct-q4f16_1-MLC";
 
@@ -138,6 +138,59 @@ export async function analyzeEmailWithLLM(
 
   try {
     return JSON.parse(cleaned);
+  } catch {
+    throw new Error("LLM returned non-JSON output, fall back to local engine");
+  }
+}
+
+const POLICY_SYSTEM_PROMPT = `You are a GRC compliance auditor reviewing a security policy draft against a named framework.
+Respond with ONLY a single JSON object (no markdown, no backticks, no preamble) matching exactly this shape:
+
+{
+  "overallScore": number (0-100),
+  "status": "Compliant" | "Partial" | "Non-Compliant",
+  "gaps": [
+    {
+      "controlId": string,
+      "title": string,
+      "description": string,
+      "severity": "high" | "medium" | "low",
+      "finding": string,
+      "suggestedWording": string
+    }
+  ],
+  "summary": string,
+  "needsEscalation": boolean
+}
+
+"gaps" should be an empty array if the policy is fully compliant. Base findings only on what's actually
+present or missing in the given policy text, for the specifically named framework.
+
+Set "needsEscalation" to true if you're not fully confident in this audit, or the framework/policy
+combination is unusual or ambiguous.`;
+
+export async function analyzePolicyWithLLM(
+  policyText: string,
+  framework: string,
+  onProgress?: (p: LoadProgress) => void
+): Promise<PolicyAuditResult & { needsEscalation: boolean }> {
+  const engine = await getEngine(onProgress);
+
+  const reply = await engine.chat.completions.create({
+    messages: [
+      { role: "system", content: POLICY_SYSTEM_PROMPT },
+      { role: "user", content: `FRAMEWORK: ${framework}\n\nPOLICY TEXT:\n${policyText}` },
+    ],
+    temperature: 0.2,
+  });
+
+  const raw = reply.choices[0]?.message?.content ?? "";
+  const cleaned = raw.replace(/```json|```/g, "").trim();
+
+  try {
+    const parsed = JSON.parse(cleaned);
+    parsed.framework = framework;
+    return parsed;
   } catch {
     throw new Error("LLM returned non-JSON output, fall back to local engine");
   }
