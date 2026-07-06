@@ -1,4 +1,4 @@
-import { LogAnalysisResult } from "./aiEngine";
+import { LogAnalysisResult, PhishingAnalysisResult } from "./aiEngine";
 
 const GEMINI_ENDPOINT =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
@@ -44,6 +44,65 @@ export async function analyzeLogWithGemini(
       contents: [
         {
           parts: [{ text: `${SYSTEM_PROMPT}\n\nLOG TO ANALYZE:\n${logText}` }],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.2,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    if (response.status === 400 || response.status === 403) {
+      throw new OnlineEngineError("That API key looks invalid or lacks permission.");
+    }
+    if (response.status === 429) {
+      throw new OnlineEngineError("Rate limit hit on this API key. Try again shortly.");
+    }
+    throw new OnlineEngineError(`Gemini request failed (status ${response.status}).`);
+  }
+
+  const data = await response.json();
+  const rawText: string =
+    data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  const cleaned = rawText.replace(/```json|```/g, "").trim();
+
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    throw new OnlineEngineError("Gemini returned a response we couldn't parse.");
+  }
+}
+
+const PHISHING_SYSTEM_PROMPT = `You are a senior security analyst providing a second-opinion review of a suspicious email.
+Respond with ONLY a single JSON object (no markdown, no backticks, no preamble) matching exactly this shape:
+
+{
+  "riskScore": number (0-100),
+  "verdict": "Safe" | "Suspicious" | "Malicious",
+  "threats": [
+    { "category": string, "description": string, "snippet": string }
+  ]
+}
+
+"threats" should be an empty array if the email is safe. Each "snippet" should be a short exact quote from
+the email that supports that specific threat category.`;
+
+export async function analyzeEmailWithGemini(
+  emailText: string,
+  apiKey: string
+): Promise<PhishingAnalysisResult> {
+  if (!apiKey.trim()) {
+    throw new OnlineEngineError("No API key provided.");
+  }
+
+  const response = await fetch(`${GEMINI_ENDPOINT}?key=${encodeURIComponent(apiKey)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [{ text: `${PHISHING_SYSTEM_PROMPT}\n\nEMAIL TO ANALYZE:\n${emailText}` }],
         },
       ],
       generationConfig: {

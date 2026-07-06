@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { analyzePhishingLocal, PhishingAnalysisResult } from '../utils/aiEngine';
+import { analyzeEmailWithLLM, LoadProgress } from '../utils/webllmEngine';
+import { analyzeEmailWithGemini, OnlineEngineError } from '../utils/onlineEngine';
 import { Mail, ShieldCheck, AlertCircle, Play, Sparkles, Cpu, Eye } from 'lucide-react';
 
 const PHISHING_SAMPLES = [
@@ -47,58 +49,49 @@ HR Team`
 
 export default function PhishingGuard() {
   const [emailInput, setEmailInput] = useState(PHISHING_SAMPLES[0].text);
-  const [useLiveAI, setUseLiveAI] = useState(false);
+  const [useLocalLLM, setUseLocalLLM] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadStatus, setLoadStatus] = useState<LoadProgress | null>(null);
   const [result, setResult] = useState<PhishingAnalysisResult | null>(null);
+  const [needsEscalation, setNeedsEscalation] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Tier 3 -- BYOK online escalation
+  const [showKeyInput, setShowKeyInput] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [onlineResult, setOnlineResult] = useState<PhishingAnalysisResult | null>(null);
+  const [onlineLoading, setOnlineLoading] = useState(false);
+  const [onlineError, setOnlineError] = useState('');
 
   const loadSample = (index: number) => {
     setEmailInput(PHISHING_SAMPLES[index].text);
     setResult(null);
+    setNeedsEscalation(false);
+    setOnlineResult(null);
+    setOnlineError('');
     setErrorMsg('');
   };
 
   const handleRunScan = async () => {
     setIsLoading(true);
     setErrorMsg('');
+    setNeedsEscalation(false);
+    setOnlineResult(null);
+    setOnlineError('');
+    setShowKeyInput(false);
     try {
-      if (useLiveAI) {
-        let apiResponseText = '';
-        let riskScore = 85;
-        let verdict: 'Safe' | 'Suspicious' | 'Malicious' = 'Malicious';
-        
-        // Simulate network delay to make it feel real
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        const localResult = analyzePhishingLocal(emailInput);
-        riskScore = localResult.riskScore;
-        verdict = localResult.verdict;
-        
-        apiResponseText = `### 📧 Live AI Phishing Analysis Report
-
-**Phishing Scanner Verdict**: ${verdict.toUpperCase()} (${riskScore}% Risk Index)
-
-#### 🔍 Identified Phishing Indicators
-${localResult.threats.map((t, i) => `${i + 1}. **[${t.category}]**
-   *   *Details*: ${t.description}
-   *   *Snippet*: \`"${t.snippet}"\``).join('\n\n')}
-
-#### 🛠️ Security Action Playbook
-1.  **Block Domain**: Blacklist the sender's origin domain at the mail gateway layer.
-2.  **DMARC/SPF Check**: Verify if SPF/DKIM authentication checks failed for the sender header.
-3.  **Containment**: Flag and delete matching emails from all company mailboxes.`;
-        
-        setResult({
-          riskScore,
-          verdict,
-          threats: [
-            {
-              category: 'Live AI Analysis Report',
-              description: 'AI analyzed indicators from headers and body.',
-              snippet: apiResponseText
-            }
-          ]
-        });
+      if (useLocalLLM) {
+        try {
+          const output = await analyzeEmailWithLLM(emailInput, (p) => setLoadStatus(p));
+          setResult(output);
+          setNeedsEscalation(output.needsEscalation ?? false);
+        } catch (llmErr) {
+          console.error('WebLLM phishing analysis failed:', llmErr);
+          setErrorMsg('On-device model had trouble with this input, showing rule-based result instead.');
+          setResult(analyzePhishingLocal(emailInput));
+        } finally {
+          setLoadStatus(null);
+        }
       } else {
         const output = analyzePhishingLocal(emailInput);
         setResult(output);
@@ -107,6 +100,22 @@ ${localResult.threats.map((t, i) => `${i + 1}. **[${t.category}]**
       setErrorMsg(err.message);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleEscalate = async () => {
+    setOnlineLoading(true);
+    setOnlineError('');
+    try {
+      const output = await analyzeEmailWithGemini(emailInput, apiKeyInput);
+      setOnlineResult(output);
+    } catch (err: any) {
+      console.error('Online escalation failed:', err);
+      setOnlineError(
+        err instanceof OnlineEngineError ? err.message : 'Something went wrong reaching the online model.'
+      );
+    } finally {
+      setOnlineLoading(false);
     }
   };
 
@@ -136,19 +145,25 @@ ${localResult.threats.map((t, i) => `${i + 1}. **[${t.category}]**
           </div>
         </div>
 
+        {/* On-Device LLM Toggle */}
         <div style={{ background: 'rgba(0, 240, 255, 0.03)', border: '1px solid rgba(0, 240, 255, 0.1)', padding: '12px', borderRadius: '4px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span className="tech-font" style={{ fontSize: '0.75rem', color: '#fff' }}>LIVE GEMINI AI ANALYSIS</span>
+            <span className="tech-font" style={{ fontSize: '0.75rem', color: '#fff' }}>ON-DEVICE AI ANALYSIS</span>
             <input 
               type="checkbox" 
-              checked={useLiveAI} 
-              onChange={(e) => setUseLiveAI(e.target.checked)} 
+              checked={useLocalLLM} 
+              onChange={(e) => setUseLocalLLM(e.target.checked)} 
               style={{ cursor: 'pointer' }}
             />
           </div>
-          {useLiveAI && (
+          {useLocalLLM && (
             <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'block', marginTop: '6px' }}>
-              Real-time message phishing classification model active.
+              Runs a small language model directly in your browser (first run downloads the model, then it's cached).
+            </span>
+          )}
+          {loadStatus && (
+            <span style={{ fontSize: '0.65rem', color: 'var(--neon-cyan)', display: 'block', marginTop: '6px' }}>
+              {loadStatus.text} ({Math.round(loadStatus.progress * 100)}%)
             </span>
           )}
         </div>
@@ -201,6 +216,74 @@ ${localResult.threats.map((t, i) => `${i + 1}. **[${t.category}]**
           </div>
         ) : (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+            {needsEscalation && (
+              <div style={{ border: '1px solid var(--neon-orange)', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{ color: 'var(--neon-orange)', background: 'rgba(255, 159, 0, 0.05)', padding: '10px', fontSize: '0.75rem' }}>
+                  On-device model wasn't fully confident on this one.
+                </div>
+
+                {!onlineResult && (
+                  <div style={{ padding: '12px', background: 'rgba(255, 159, 0, 0.02)' }}>
+                    {!showKeyInput ? (
+                      <button
+                        className="cyber-btn cyber-btn-secondary"
+                        style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                        onClick={() => setShowKeyInput(true)}
+                      >
+                        <Sparkles style={{ width: '14px', height: '14px' }} /> Get a second opinion (bring your own Gemini API key)
+                      </button>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                          Your key is used only for this request, sent directly to Google, never stored or sent anywhere else.
+                        </label>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <input
+                            type="password"
+                            placeholder="Paste your Gemini API key"
+                            value={apiKeyInput}
+                            onChange={(e) => setApiKeyInput(e.target.value)}
+                            className="cyber-input mono-font"
+                            style={{ flex: 1, fontSize: '0.75rem', background: '#050811', border: '1px solid var(--panel-border)', padding: '8px' }}
+                          />
+                          <button
+                            className="cyber-btn cyber-btn-success"
+                            style={{ fontSize: '0.7rem', whiteSpace: 'nowrap' }}
+                            onClick={handleEscalate}
+                            disabled={onlineLoading || !apiKeyInput.trim()}
+                          >
+                            {onlineLoading ? 'Analyzing...' : 'Analyze'}
+                          </button>
+                        </div>
+                        {onlineError && (
+                          <span style={{ fontSize: '0.7rem', color: 'var(--neon-red)' }}>{onlineError}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {onlineResult && (
+              <div style={{ border: '1px solid var(--neon-cyan)', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--neon-cyan)', background: 'rgba(0, 240, 255, 0.05)', padding: '10px', fontSize: '0.75rem' }}>
+                  <Sparkles style={{ width: '14px', height: '14px' }} /> ONLINE MODEL SECOND OPINION (Gemini, your API key)
+                </div>
+                <div style={{ padding: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', gap: '15px', fontSize: '0.8rem' }}>
+                    <strong>{onlineResult.verdict}</strong>
+                    <span>Risk Score: {onlineResult.riskScore}%</span>
+                  </div>
+                  {onlineResult.threats.map((t, idx) => (
+                    <p key={idx} style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>
+                      <strong>{t.category}:</strong> {t.description}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            )}
             
             {/* Risk Index Dial Info */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '15px', background: 'rgba(0, 240, 255, 0.03)', border: '1px solid rgba(0, 240, 255, 0.1)', padding: '15px', borderRadius: '4px' }}>
@@ -220,12 +303,12 @@ ${localResult.threats.map((t, i) => `${i + 1}. **[${t.category}]**
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingLeft: '10px' }}>
                 <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--neon-cyan)', marginBottom: '5px' }} className="tech-font">AI ANALYSIS THREAT VERDICT:</span>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-primary)', lineHeight: '1.4' }}>
-                  {result.verdict === 'Malicious' 
-                    ? 'CRITICAL RISK: This email exhibits multiple high-confidence phishing indicators. Headers indicate a spoofed sender domain, paired with stress/urgency vocabulary designed to force action.'
-                    : result.verdict === 'Suspicious'
-                    ? 'MODERATE RISK: Caution advised. The content uses business urgency syntax, but lacks high-confidence spoofing indicators. Verify communication channels manually.'
-                    : 'SAFE: No security triggers fired. The text is conversational and lacks social engineering patterns.'}
-                </p>
+  {result.riskScore >= 70
+    ? 'HIGH RISK: This email exhibits high-confidence phishing indicators. Treat with strong suspicion and verify through a separate, trusted channel before acting on anything it requests.'
+    : result.riskScore >= 30
+    ? 'MODERATE RISK: Some suspicious characteristics present, but not conclusive. Verify communication channels manually before acting on this email.'
+    : 'LOW RISK: Few or no phishing indicators detected. Still worth a quick sanity check if anything about it feels off.'}
+</p>
               </div>
             </div>
 

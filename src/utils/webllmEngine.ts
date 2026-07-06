@@ -1,5 +1,5 @@
 import { CreateMLCEngine, MLCEngine } from "@mlc-ai/web-llm";
-import { LogAnalysisResult } from "./aiEngine";
+import { LogAnalysisResult, PhishingAnalysisResult } from "./aiEngine";
 
 const MODEL_ID = "Qwen2.5-1.5B-Instruct-q4f16_1-MLC";
 
@@ -98,4 +98,47 @@ export async function analyzeLogWithLLM(
   }
 
   return parsed;
+}
+
+const PHISHING_SYSTEM_PROMPT = `You are an email phishing detection engine. You will be given a raw email (headers + body).
+Respond with ONLY a single JSON object (no markdown, no backticks, no preamble) matching exactly this shape:
+
+{
+  "riskScore": number (0-100),
+  "verdict": "Safe" | "Suspicious" | "Malicious",
+  "threats": [
+    { "category": string, "description": string, "snippet": string }
+  ],
+  "needsEscalation": boolean
+}
+
+"threats" should be an empty array if the email is safe. Each "snippet" should be a short exact quote from
+the email body that supports that specific threat category (e.g. a suspicious link, urgency language, a
+spoofed sender domain).
+
+Set "needsEscalation" to true if you're not confident in your verdict, or the email has unusual characteristics
+that don't clearly fit typical phishing/safe patterns.`;
+
+export async function analyzeEmailWithLLM(
+  emailText: string,
+  onProgress?: (p: LoadProgress) => void
+): Promise<PhishingAnalysisResult & { needsEscalation: boolean }> {
+  const engine = await getEngine(onProgress);
+
+  const reply = await engine.chat.completions.create({
+    messages: [
+      { role: "system", content: PHISHING_SYSTEM_PROMPT },
+      { role: "user", content: emailText },
+    ],
+    temperature: 0.2,
+  });
+
+  const raw = reply.choices[0]?.message?.content ?? "";
+  const cleaned = raw.replace(/```json|```/g, "").trim();
+
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    throw new Error("LLM returned non-JSON output, fall back to local engine");
+  }
 }
