@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { analyzePhishingLocal, PhishingAnalysisResult } from '../utils/aiEngine';
 import { analyzeEmailWithLLM, LoadProgress } from '../utils/webllmEngine';
 import { analyzeEmailWithGemini, OnlineEngineError } from '../utils/onlineEngine';
-import { Mail, ShieldCheck, AlertCircle, Play, Sparkles, Cpu, Eye } from 'lucide-react';
+import { analyzeEmailForensics, EmailForensicsResult } from '../utils/emailForensics';
+import { Mail, ShieldCheck, AlertCircle, Play, Sparkles, Cpu, Eye, Search } from 'lucide-react';
 
 const PHISHING_SAMPLES = [
   {
     name: 'PayPal Billing Spoof',
     text: `From: PayPal Security <support@paypal-safety-update.com>
+Reply-To: recovery@secure-paypal-billing.net
 Subject: URGENT: Your PayPal Account has been temporarily suspended!
 
 Dear Customer,
@@ -35,6 +37,8 @@ Chief Executive Officer`
   {
     name: 'Standard Safe Email',
     text: `From: HR Operations <hr@company.com>
+Reply-To: hr@company.com
+Message-ID: <a1b2c3d4@company.com>
 Subject: Schedule for Annual Company Picnic next Friday
 
 Hi Team,
@@ -53,6 +57,7 @@ export default function PhishingGuard() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadStatus, setLoadStatus] = useState<LoadProgress | null>(null);
   const [result, setResult] = useState<PhishingAnalysisResult | null>(null);
+  const [forensics, setForensics] = useState<EmailForensicsResult | null>(null);
   const [needsEscalation, setNeedsEscalation] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -66,6 +71,7 @@ export default function PhishingGuard() {
   const loadSample = (index: number) => {
     setEmailInput(PHISHING_SAMPLES[index].text);
     setResult(null);
+    setForensics(null);
     setNeedsEscalation(false);
     setOnlineResult(null);
     setOnlineError('');
@@ -79,6 +85,11 @@ export default function PhishingGuard() {
     setOnlineResult(null);
     setOnlineError('');
     setShowKeyInput(false);
+
+    // Forensics are deterministic, real checks -- always run regardless of AI mode
+    const forensicsResult = analyzeEmailForensics(emailInput);
+    setForensics(forensicsResult);
+
     try {
       if (useLocalLLM) {
         try {
@@ -217,6 +228,29 @@ export default function PhishingGuard() {
         ) : (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
+            {/* Header & URL Forensics -- concrete, checkable facts, independent of any AI verdict */}
+            {forensics && (
+              <div style={{ border: '1px solid var(--neon-green)', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', color: 'var(--neon-green)', background: 'rgba(57, 255, 20, 0.05)', padding: '10px', fontSize: '0.75rem' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Search style={{ width: '14px', height: '14px' }} /> HEADER & URL FORENSICS (deterministic, not AI-generated)
+                  </span>
+                  <strong>{forensics.forensicScore}/100</strong>
+                </div>
+                <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {forensics.flags.length === 0 ? (
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>No header or URL red flags detected.</span>
+                  ) : (
+                    forensics.flags.map((flag, idx) => (
+                      <span key={idx} style={{ fontSize: '0.75rem', color: 'var(--text-primary)', display: 'flex', gap: '6px' }}>
+                        <span style={{ color: 'var(--neon-orange)' }}>▸</span> {flag}
+                      </span>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
             {needsEscalation && (
               <div style={{ border: '1px solid var(--neon-orange)', borderRadius: '4px', overflow: 'hidden' }}>
                 <div style={{ color: 'var(--neon-orange)', background: 'rgba(255, 159, 0, 0.05)', padding: '10px', fontSize: '0.75rem' }}>
@@ -303,12 +337,12 @@ export default function PhishingGuard() {
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingLeft: '10px' }}>
                 <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--neon-cyan)', marginBottom: '5px' }} className="tech-font">AI ANALYSIS THREAT VERDICT:</span>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-primary)', lineHeight: '1.4' }}>
-  {result.riskScore >= 70
-    ? 'HIGH RISK: This email exhibits high-confidence phishing indicators. Treat with strong suspicion and verify through a separate, trusted channel before acting on anything it requests.'
-    : result.riskScore >= 30
-    ? 'MODERATE RISK: Some suspicious characteristics present, but not conclusive. Verify communication channels manually before acting on this email.'
-    : 'LOW RISK: Few or no phishing indicators detected. Still worth a quick sanity check if anything about it feels off.'}
-</p>
+                  {result.riskScore >= 70
+                    ? 'HIGH RISK: This email exhibits high-confidence phishing indicators. Treat with strong suspicion and verify through a separate, trusted channel before acting on anything it requests.'
+                    : result.riskScore >= 30
+                    ? 'MODERATE RISK: Some suspicious characteristics present, but not conclusive. Verify communication channels manually before acting on this email.'
+                    : 'LOW RISK: Few or no phishing indicators detected. Still worth a quick sanity check if anything about it feels off.'}
+                </p>
               </div>
             </div>
 
