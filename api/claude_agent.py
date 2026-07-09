@@ -1,10 +1,10 @@
 import os
 import json
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import anthropic
 
-app = FastAPI(title="CyberSentinel Claude Agent Harness")
+router = APIRouter()
 
 # Note: This is an alternative endpoint demonstrating the Anthropic SDK, 
 # as explicitly required by the Job Description ("Claude Agent SDK").
@@ -33,7 +33,7 @@ CLAUDE_TOOLS = [
     }
 ]
 
-@app.post("/api/claude-remediate")
+@router.post("/api/claude-remediate")
 async def claude_autonomous_remediation(req: RemediationRequest):
     """
     Anthropic SDK Tool Calling Endpoint:

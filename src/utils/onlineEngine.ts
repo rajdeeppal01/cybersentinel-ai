@@ -11,8 +11,7 @@ export class OnlineEngineError extends Error {}
  * it goes straight from their browser to Google.
  */
 export async function analyzeLogWithGemini(
-  logText: string,
-  apiKey: string
+  logText: string
 ): Promise<LogAnalysisResult> {
   // We no longer hit Gemini directly from the browser!
   // We now hit our own FastAPI Vercel Serverless backend.

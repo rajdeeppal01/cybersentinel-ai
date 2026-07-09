@@ -51,14 +51,14 @@ export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) 
         } catch (llmErr) {
           console.error('WebLLM analysis failed:', llmErr);
           setErrorMsg('On-device model had trouble with this input, falling back to server backend.');
-          const result = await analyzeLogWithGemini(logInput, "backend");
+          const result = await analyzeLogWithGemini(logInput);
           setAnalysisResult(result);
         } finally {
           setLoadStatus(null);
         }
       } else {
         // Hit our Python FastAPI Backend
-        const result = await analyzeLogWithGemini(logInput, "backend");
+        const result = await analyzeLogWithGemini(logInput);
         setAnalysisResult(result);
       }
     } catch (err: any) {
@@ -72,7 +72,9 @@ export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) 
     setOnlineLoading(true);
     setOnlineError('');
     try {
-      const result = await analyzeLogWithGemini(logInput, apiKeyInput);
+      // For escalation, we still call the backend, but since the user provided an API key in the UI for escalation,
+      // the Vercel backend handles it via its own environment variables now. We ignore the UI apiKey.
+      const result = await analyzeLogWithGemini(logInput);
       setOnlineResult(result);
     } catch (err: any) {
       console.error('Online escalation failed:', err);

@@ -1,12 +1,18 @@
 import os
 import json
-from typing import List, Optional
+import requests
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from typing import List, Optional
 import httpx
+from api.claude_agent import router as claude_router
 
 app = FastAPI(title="CyberSentinel Agent Harness")
 
+# Expose the Claude Agent SDK endpoint as well
+app.include_router(claude_router)
+
+# Note: We are using Gemini API here because the user is on the free tier.
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 class TriageRequest(BaseModel):
