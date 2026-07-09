@@ -50,13 +50,15 @@ export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) 
           setNeedsEscalation(result.needsEscalation ?? false);
         } catch (llmErr) {
           console.error('WebLLM analysis failed:', llmErr);
-          setErrorMsg('On-device model had trouble with this input, showing rule-based result instead.');
-          setAnalysisResult(analyzeLogLocal(logInput));
+          setErrorMsg('On-device model had trouble with this input, falling back to server backend.');
+          const result = await analyzeLogWithGemini(logInput, "backend");
+          setAnalysisResult(result);
         } finally {
           setLoadStatus(null);
         }
       } else {
-        const result = analyzeLogLocal(logInput);
+        // Hit our Python FastAPI Backend
+        const result = await analyzeLogWithGemini(logInput, "backend");
         setAnalysisResult(result);
       }
     } catch (err: any) {

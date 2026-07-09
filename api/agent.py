@@ -15,10 +15,16 @@ class TriageRequest(BaseModel):
     source_ip: str
 
 class TriageDecision(BaseModel):
+    detectedThreat: str
+    confidence: float
     severity: str
-    is_false_positive: bool
-    recommended_action: str
-    confidence_score: float
+    mitreCode: str
+    mitreName: str
+    mitreDescription: str
+    grcControls: dict
+    analysisSummary: str
+    impact: str
+    incidentResponsePlaybook: List[str]
 
 # Tool Definitions (Guardrails)
 SECURITY_TOOLS = [
@@ -75,8 +81,10 @@ async def autonomous_triage(req: TriageRequest):
         raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
 
     prompt = (
-        f"Analyze this security log and determine the severity. "
-        f"Log: {req.raw_log} | Source IP: {req.source_ip}"
+        f"You are a senior security analyst providing a review of a security log. "
+        f"Analyze this security log and return the analysis. "
+        f"Log: {req.raw_log} | Source IP: {req.source_ip} "
+        f"Be precise about MITRE ATT&CK codes."
     )
 
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
@@ -88,12 +96,29 @@ async def autonomous_triage(req: TriageRequest):
             "responseSchema": {
                 "type": "OBJECT",
                 "properties": {
-                    "severity": {"type": "STRING", "enum": ["Low", "Medium", "High", "Critical"]},
-                    "is_false_positive": {"type": "BOOLEAN"},
-                    "recommended_action": {"type": "STRING"},
-                    "confidence_score": {"type": "NUMBER"}
+                    "detectedThreat": {"type": "STRING"},
+                    "confidence": {"type": "NUMBER"},
+                    "severity": {"type": "STRING", "enum": ["low", "medium", "high", "critical"]},
+                    "mitreCode": {"type": "STRING"},
+                    "mitreName": {"type": "STRING"},
+                    "mitreDescription": {"type": "STRING"},
+                    "grcControls": {
+                        "type": "OBJECT",
+                        "properties": {
+                            "nist": {"type": "STRING"},
+                            "soc2": {"type": "STRING"},
+                            "iso27001": {"type": "STRING"},
+                            "gdpr": {"type": "STRING"}
+                        }
+                    },
+                    "analysisSummary": {"type": "STRING"},
+                    "impact": {"type": "STRING"},
+                    "incidentResponsePlaybook": {
+                        "type": "ARRAY",
+                        "items": {"type": "STRING"}
+                    }
                 },
-                "required": ["severity", "is_false_positive", "recommended_action", "confidence_score"]
+                "required": ["detectedThreat", "confidence", "severity", "mitreCode", "mitreName", "mitreDescription", "grcControls", "analysisSummary", "impact", "incidentResponsePlaybook"]
             }
         }
     }

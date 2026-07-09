@@ -33,45 +33,25 @@ export async function analyzeLogWithGemini(
   logText: string,
   apiKey: string
 ): Promise<LogAnalysisResult> {
-  if (!apiKey.trim()) {
-    throw new OnlineEngineError("No API key provided.");
-  }
-
-  const response = await fetch(`${GEMINI_ENDPOINT}?key=${encodeURIComponent(apiKey)}`, {
+  // We no longer hit Gemini directly from the browser!
+  // We now hit our own FastAPI Vercel Serverless backend.
+  
+  const response = await fetch(`/api/triage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      contents: [
-        {
-          parts: [{ text: `${SYSTEM_PROMPT}\n\nLOG TO ANALYZE:\n${logText}` }],
-        },
-      ],
-      generationConfig: {
-        temperature: 0.2,
-      },
+      alert_id: "ALT-FRONTEND-" + Math.floor(Math.random() * 1000),
+      raw_log: logText,
+      source_ip: "Client"
     }),
   });
 
   if (!response.ok) {
-    if (response.status === 400 || response.status === 403) {
-      throw new OnlineEngineError("That API key looks invalid or lacks permission.");
-    }
-    if (response.status === 429) {
-      throw new OnlineEngineError("Rate limit hit on this API key. Try again shortly.");
-    }
-    throw new OnlineEngineError(`Gemini request failed (status ${response.status}).`);
+    throw new OnlineEngineError(`Backend API failed (status ${response.status}). Check Vercel logs or API key.`);
   }
 
   const data = await response.json();
-  const rawText: string =
-    data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-  const cleaned = rawText.replace(/```json|```/g, "").trim();
-
-  try {
-    return JSON.parse(cleaned);
-  } catch {
-    throw new OnlineEngineError("Gemini returned a response we couldn't parse.");
-  }
+  return data;
 }
 
 const PHISHING_SYSTEM_PROMPT = `You are a senior security analyst providing a second-opinion review of a suspicious email.
