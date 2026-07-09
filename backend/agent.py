@@ -47,6 +47,19 @@ SECURITY_TOOLS = [
                     },
                     "required": ["alert_id", "summary"]
                 }
+            },
+            {
+                "name": "auto_generate_remediation_pr",
+                "description": "Auto-generates a code fix and opens a Pull Request on GitHub to remediate a SAST/DAST vulnerability (e.g., SQL Injection, XSS).",
+                "parameters": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "repo_name": {"type": "STRING", "description": "The repository name to patch"},
+                        "vulnerability_type": {"type": "STRING", "description": "Type of vulnerability being fixed"},
+                        "proposed_code_fix": {"type": "STRING", "description": "The actual patched code block"}
+                    },
+                    "required": ["repo_name", "vulnerability_type", "proposed_code_fix"]
+                }
             }
         ]
     }
@@ -147,6 +160,8 @@ async def autonomous_remediation(req: TriageRequest):
                 actions_taken.append(f"Action: Quarantined {args.get('ip_address')} due to {args.get('reason')}")
             elif func_name == "create_jira_ticket":
                 actions_taken.append(f"Action: Created Jira Ticket for {args.get('alert_id')} - {args.get('summary')}")
+            elif func_name == "auto_generate_remediation_pr":
+                actions_taken.append(f"Action: Auto-generated PR on {args.get('repo_name')} to fix {args.get('vulnerability_type')}")
                 
     if not actions_taken:
         reply = parts[0].get("text", "No action taken.") if parts else "No action taken."

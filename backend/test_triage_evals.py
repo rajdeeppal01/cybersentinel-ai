@@ -99,3 +99,33 @@ async def test_agent_guardrails_benign():
     actions_str = " ".join(data["actions"]).lower()
     assert "quarantined" not in actions_str, "Agent hallucinated a quarantine on benign traffic."
     assert "benign" in actions_str or "no action" in actions_str, "Agent did not correctly identify benign event."
+
+@pytest.mark.asyncio
+async def test_agent_auto_pr_generation():
+    """
+    Eval 4: Tests if the agent can go beyond triage and auto-generate 
+    a remediation Pull Request when presented with a SAST code vulnerability.
+    """
+    if not GEMINI_API_KEY:
+        pytest.skip("GEMINI_API_KEY is required for eval tests.")
+        
+    payload = {
+        "alert_id": "SAST-SQLi-001",
+        "raw_log": "Vulnerability: SQL Injection. The endpoint /login directly concatenates user input 'username' into the SQL query: \"SELECT * FROM users WHERE username = '\" + username + \"'\". Fix this using parameterized queries.",
+        "source_ip": "127.0.0.1"
+    }
+    
+    from fastapi.testclient import TestClient
+    from agent import app
+    
+    client = TestClient(app)
+    
+    response = client.post("/api/remediate", json=payload)
+    assert response.status_code == 200
+    
+    data = response.json()
+    assert "actions" in data
+    
+    actions_str = " ".join(data["actions"]).lower()
+    assert "auto-generated pr" in actions_str, "Agent failed to trigger the auto_generate_remediation_pr tool."
+    assert "sql" in actions_str or "injection" in actions_str, "Agent failed to extract the vulnerability type for the PR."
