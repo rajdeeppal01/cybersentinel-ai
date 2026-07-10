@@ -34,6 +34,25 @@ export async function analyzeLogWithGemini(
   return data;
 }
 
+export async function analyzePhishingWithBackend(
+  emailText: string
+): Promise<PhishingAnalysisResult> {
+  const response = await fetch(`/api/phishing`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email_text: emailText
+    }),
+  });
+
+  if (!response.ok) {
+    throw new OnlineEngineError(`Backend API failed (status ${response.status}).`);
+  }
+
+  const data = await response.json();
+  return data;
+}
+
 const PHISHING_SYSTEM_PROMPT = `You are a senior security analyst providing a second-opinion review of a suspicious email.
 Respond with ONLY a single JSON object (no markdown, no backticks, no preamble) matching exactly this shape:
 

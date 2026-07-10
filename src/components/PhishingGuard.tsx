@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { analyzePhishingLocal, PhishingAnalysisResult } from '../utils/aiEngine';
 import { analyzeEmailWithLLM, LoadProgress } from '../utils/webllmEngine';
-import { analyzeEmailWithGemini, OnlineEngineError } from '../utils/onlineEngine';
+import { analyzeEmailWithGemini, analyzePhishingWithBackend, OnlineEngineError } from '../utils/onlineEngine';
 import { analyzeEmailForensics, EmailForensicsResult } from '../utils/emailForensics';
 import { Mail, ShieldCheck, AlertCircle, Play, Sparkles, Cpu, Eye, Search } from 'lucide-react';
 
@@ -104,7 +104,7 @@ export default function PhishingGuard() {
           setLoadStatus(null);
         }
       } else {
-        const output = analyzePhishingLocal(emailInput);
+        const output = await analyzePhishingWithBackend(emailInput);
         setResult(output);
       }
     } catch (err: any) {

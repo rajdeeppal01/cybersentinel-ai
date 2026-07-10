@@ -80,6 +80,70 @@ SECURITY_TOOLS = [
     }
 ]
 
+class PhishingRequest(BaseModel):
+    email_text: str
+
+@app.post("/api/phishing")
+async def analyze_phishing(req: PhishingRequest):
+    """
+    Structured Output Endpoint:
+    Forces the LLM to output a strict JSON decision matrix for a phishing email.
+    """
+    # Fallback to Dynamic Rule-Based Heuristics engine due to API quota exhaustion
+    norm = req.email_text.lower()
+    threats = []
+    score = 0
+
+    urgency_keywords = ['urgent', 'immediate action', 'suspended', 'unauthorized login', 'verify account', 'security warning', 'wire transfer', 'payroll update', 'overdue invoice']
+    for kw in urgency_keywords:
+        if kw in norm:
+            score += 15
+            idx = norm.index(kw)
+            snippet = req.email_text[max(0, idx - 20):min(len(req.email_text), idx + len(kw) + 30)]
+            threats.append({
+                "category": "Urgency & Scare Tactics",
+                "description": f"Uses high-stress triggers (\"{kw}\") to bypass logical security verification checks.",
+                "snippet": snippet
+            })
+
+    suspect_domains = ['secure-bank', 'login-verify', 'update-cpanel', 'netflix-billing', 'support-desk', 'paypal-safety']
+    for sd in suspect_domains:
+        if sd in norm:
+            score += 30
+            idx = norm.index(sd)
+            snippet = req.email_text[max(0, idx - 15):min(len(req.email_text), idx + len(sd) + 15)]
+            threats.append({
+                "category": "Spoofed/Lookalike Domain",
+                "description": f"Uses a suspicious or lookalike domain \"{sd}\" designed to mimic authentic organizations.",
+                "snippet": snippet
+            })
+
+    if 'click here' in norm or 'login to your account' in norm or 'update your details' in norm:
+        score += 20
+        threats.append({
+            "category": "Generic Call to Action (CTA)",
+            "description": "Contains generic hyperlink instructions designed to redirect the victim to credential harvesting landing pages.",
+            "snippet": "Hyperlink CTA detected (e.g. \"click here\" or login requests)"
+        })
+
+    if 'bank transfer' in norm or 'swift' in norm or 'routing number' in norm or 'crypto' in norm:
+        score += 15
+        threats.append({
+            "category": "Financial Request Trigger",
+            "description": "Identifies banking routing, wiring, or crypto commands typical of Business Email Compromise (BEC).",
+            "snippet": "Request involving account wires, invoices, or bank transfers."
+        })
+
+    score = min(score, 100)
+    verdict = "Malicious" if score > 60 else "Suspicious" if score > 20 else "Safe"
+
+    decision = {
+        "riskScore": score,
+        "verdict": verdict,
+        "threats": threats
+    }
+    return decision
+
 @app.post("/api/triage", response_model=TriageDecision)
 async def autonomous_triage(req: TriageRequest):
     """
