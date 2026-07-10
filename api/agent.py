@@ -93,10 +93,7 @@ async def autonomous_triage(req: TriageRequest):
         f"Return EXACTLY a raw JSON object with the keys: detectedThreat (string), confidence (number), severity (low/medium/high/critical), mitreCode (string), mitreName (string), mitreDescription (string), grcControls (object with nist, soc2, iso27001, gdpr keys), analysisSummary (string), impact (string), incidentResponsePlaybook (array of strings). Do NOT wrap in markdown or backticks."
     )
 
-    url = f"https://generativelanguage.googleapis.com/v1/models?key={GEMINI_API_KEY}"
-    async with httpx.AsyncClient() as client:
-        models_resp = await client.get(url)
-        raise HTTPException(status_code=500, detail=f"Models available: {models_resp.text}")
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={GEMINI_API_KEY}"
     
     payload = {
         "contents": [{"parts": [{"text": prompt}]}]
@@ -144,7 +141,7 @@ async def autonomous_remediation(req: TriageRequest):
         f"If it is benign, do nothing and say 'Benign'."
     )
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={GEMINI_API_KEY}"
     
     payload = {
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
