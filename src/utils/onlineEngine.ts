@@ -182,3 +182,25 @@ export async function analyzePolicyWithGemini(
     throw new OnlineEngineError("Gemini returned a response we couldn't parse.");
   }
 }
+
+export async function analyzePolicyWithBackend(
+  policyText: string,
+  framework: string
+): Promise<PolicyAuditResult> {
+  const response = await fetch(`/api/audit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      policy_text: policyText,
+      framework: framework
+    }),
+  });
+
+  if (!response.ok) {
+    throw new OnlineEngineError(`Backend API failed (status ${response.status}).`);
+  }
+
+  const data = await response.json();
+  data.framework = framework;
+  return data;
+}

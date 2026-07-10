@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { POLICY_SAMPLES, auditPolicyLocal, PolicyAuditResult } from '../utils/aiEngine';
 import { analyzePolicyWithLLM, LoadProgress } from '../utils/webllmEngine';
-import { analyzePolicyWithGemini, OnlineEngineError } from '../utils/onlineEngine';
+import { analyzePolicyWithGemini, analyzePolicyWithBackend, OnlineEngineError } from '../utils/onlineEngine';
 import { ShieldCheck, ClipboardCheck, Sparkles, FileWarning, Eye, Cpu, Layers } from 'lucide-react';
 
 interface ComplianceAuditorProps {
@@ -66,7 +66,7 @@ export default function ComplianceAuditor({ onUpdateScore }: ComplianceAuditorPr
           setLoadStatus(null);
         }
       } else {
-        const result = auditPolicyLocal(policyInput, framework);
+        const result = await analyzePolicyWithBackend(policyInput, framework);
         setAuditResult(result);
         onUpdateScore(framework, result.overallScore);
       }
