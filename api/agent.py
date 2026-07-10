@@ -106,22 +106,25 @@ async def autonomous_triage(req: TriageRequest):
         raise HTTPException(status_code=500, detail=f"LLM API Error: {resp.status_code} - {resp.text}")
         
     data = resp.json()
-    text = data["candidates"][0]["content"]["parts"][0]["text"]
-    
-    text = text.strip()
-    if text.startswith("```json"):
-        text = text[7:]
-    if text.startswith("```"):
-        text = text[3:]
-    if text.endswith("```"):
-        text = text[:-3]
-    text = text.strip()
-    
     try:
-        decision = json.loads(text)
-        return decision
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=500, detail="LLM output invalid JSON")
+        text = data["candidates"][0]["content"]["parts"][0]["text"]
+        
+        text = text.strip()
+        if text.startswith("```json"):
+            text = text[7:]
+        if text.startswith("```"):
+            text = text[3:]
+        if text.endswith("```"):
+            text = text[:-3]
+        text = text.strip()
+        
+        try:
+            decision = json.loads(text)
+            return decision
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=500, detail=f"LLM output invalid JSON: {text}")
+    except (KeyError, IndexError) as e:
+        raise HTTPException(status_code=500, detail=f"LLM Response Error: {json.dumps(data)}")
 
 
 @app.post("/api/remediate")
