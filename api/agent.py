@@ -89,43 +89,14 @@ async def autonomous_triage(req: TriageRequest):
         f"You are a senior security analyst providing a review of a security log. "
         f"Analyze this security log and return the analysis. "
         f"Log: {req.raw_log} | Source IP: {req.source_ip} "
-        f"Be precise about MITRE ATT&CK codes."
+        f"Be precise about MITRE ATT&CK codes.\n"
+        f"Return EXACTLY a raw JSON object with the keys: detectedThreat (string), confidence (number), severity (low/medium/high/critical), mitreCode (string), mitreName (string), mitreDescription (string), grcControls (object with nist, soc2, iso27001, gdpr keys), analysisSummary (string), impact (string), incidentResponsePlaybook (array of strings). Do NOT wrap in markdown or backticks."
     )
 
     url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
     
     payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "responseMimeType": "application/json",
-            "responseSchema": {
-                "type": "OBJECT",
-                "properties": {
-                    "detectedThreat": {"type": "STRING"},
-                    "confidence": {"type": "NUMBER"},
-                    "severity": {"type": "STRING", "enum": ["low", "medium", "high", "critical"]},
-                    "mitreCode": {"type": "STRING"},
-                    "mitreName": {"type": "STRING"},
-                    "mitreDescription": {"type": "STRING"},
-                    "grcControls": {
-                        "type": "OBJECT",
-                        "properties": {
-                            "nist": {"type": "STRING"},
-                            "soc2": {"type": "STRING"},
-                            "iso27001": {"type": "STRING"},
-                            "gdpr": {"type": "STRING"}
-                        }
-                    },
-                    "analysisSummary": {"type": "STRING"},
-                    "impact": {"type": "STRING"},
-                    "incidentResponsePlaybook": {
-                        "type": "ARRAY",
-                        "items": {"type": "STRING"}
-                    }
-                },
-                "required": ["detectedThreat", "confidence", "severity", "mitreCode", "mitreName", "mitreDescription", "grcControls", "analysisSummary", "impact", "incidentResponsePlaybook"]
-            }
-        }
+        "contents": [{"parts": [{"text": prompt}]}]
     }
 
     async with httpx.AsyncClient() as client:
@@ -136,6 +107,15 @@ async def autonomous_triage(req: TriageRequest):
         
     data = resp.json()
     text = data["candidates"][0]["content"]["parts"][0]["text"]
+    
+    text = text.strip()
+    if text.startswith("```json"):
+        text = text[7:]
+    if text.startswith("```"):
+        text = text[3:]
+    if text.endswith("```"):
+        text = text[:-3]
+    text = text.strip()
     
     try:
         decision = json.loads(text)
