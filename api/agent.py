@@ -88,7 +88,8 @@ async def autonomous_triage(req: TriageRequest):
     """
     # Fallback to Dynamic Rule-Based Heuristics engine due to API quota exhaustion
     # This proves the backend is processing logs dynamically!
-    log_text = req.raw_log.lower()
+    import urllib.parse
+    log_text = urllib.parse.unquote(req.raw_log.lower())
     
     threat = "Suspicious Activity Detected"
     severity = "medium"
