@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 import httpx
+import anthropic
 from api.claude_agent import router as claude_router
 
 app = FastAPI(title="CyberSentinel Agent Harness")
@@ -13,6 +14,9 @@ app.include_router(claude_router)
 
 # Note: We are using Gemini API here because the user is on the free tier.
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+
+anthropic_client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else None
 
 class TriageRequest(BaseModel):
     alert_id: str
@@ -82,9 +86,9 @@ async def autonomous_triage(req: TriageRequest):
     Structured Output Endpoint:
     Forces the LLM to output a strict JSON decision matrix for an alert.
     """
-    if not GEMINI_API_KEY:
-        raise HTTPException(status_code=500, detail="GEMINI_API_KEY not configured")
-
+    if not ANTHROPIC_API_KEY:
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not configured. Cannot fallback from Gemini 429.")
+    
     prompt = (
         f"You are a senior security analyst providing a review of a security log. "
         f"Analyze this security log and return the analysis. "
@@ -93,21 +97,15 @@ async def autonomous_triage(req: TriageRequest):
         f"Return EXACTLY a raw JSON object with the keys: detectedThreat (string), confidence (number), severity (low/medium/high/critical), mitreCode (string), mitreName (string), mitreDescription (string), grcControls (object with nist, soc2, iso27001, gdpr keys), analysisSummary (string), impact (string), incidentResponsePlaybook (array of strings). Do NOT wrap in markdown or backticks."
     )
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key={GEMINI_API_KEY}"
-    
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}]
-    }
-
-    async with httpx.AsyncClient() as client:
-        resp = await client.post(url, json=payload, headers={"Content-Type": "application/json"})
-        
-    if resp.status_code != 200:
-        raise HTTPException(status_code=500, detail=f"LLM API Error: {resp.status_code} - {resp.text}")
-        
-    data = resp.json()
     try:
-        text = data["candidates"][0]["content"]["parts"][0]["text"]
+        response = await anthropic_client.messages.create(
+            model="claude-3-5-sonnet-20240620",
+            max_tokens=1024,
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+        text = response.content[0].text
         
         text = text.strip()
         if text.startswith("```json"):
@@ -123,8 +121,8 @@ async def autonomous_triage(req: TriageRequest):
             return decision
         except json.JSONDecodeError:
             raise HTTPException(status_code=500, detail=f"LLM output invalid JSON: {text}")
-    except (KeyError, IndexError) as e:
-        raise HTTPException(status_code=500, detail=f"LLM Response Error: {json.dumps(data)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Anthropic API Error: {str(e)}")
 
 
 @app.post("/api/remediate")
