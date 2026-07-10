@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Shield, ShieldAlert, Sparkles, X, Plus, LayoutGrid } from 'lucide-react';
+import { Shield, ShieldAlert, Sparkles, X, Plus, LayoutGrid, Loader2 } from 'lucide-react';
+import { generateMitigationWithBackend } from '../utils/onlineEngine';
 
 interface RiskItem {
   id: string;
@@ -111,6 +112,7 @@ export default function RiskRegister() {
   const [newCategory, setNewCategory] = useState<'Infrastructure' | 'Software' | 'Process' | 'Compliance'>('Infrastructure');
   const [newLikelihood, setNewLikelihood] = useState(3);
   const [newImpact, setNewImpact] = useState(3);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleMitigate = (id: string) => {
     setRisks(prev => prev.map(risk => {
@@ -132,37 +134,37 @@ export default function RiskRegister() {
     }
   };
 
-  const handleAddRisk = (e: React.FormEvent) => {
+  const handleAddRisk = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName) return;
+    if (!newName || isSubmitting) return;
 
+    setIsSubmitting(true);
     const likelihood = Number(newLikelihood);
     const impact = Number(newImpact);
 
-    const newRisk: RiskItem = {
-      id: `RSK-0${risks.length + 1}`,
-      name: newName,
-      category: newCategory,
-      likelihood,
-      impact,
-      score: likelihood * impact,
-      status: 'Inherent',
-      mitigation: {
-        steps: [
-          'Document asset mapping structure and audit credentials.',
-          'Define access restrictions and network isolation strategies.',
-          'Conduct testing protocols at defined intervals.'
-        ],
-        cost: 'TBD upon operational deployment',
-        effort: 'Medium',
-        residualScore: Math.ceil((likelihood * impact) * 0.25),
-        controls: 'NIST CSF v2.0 Controls'
-      }
-    };
+    try {
+      const mitigationPlan = await generateMitigationWithBackend(newName, newCategory, likelihood, impact);
+      
+      const newRisk: RiskItem = {
+        id: `RSK-0${risks.length + 1}`,
+        name: newName,
+        category: newCategory,
+        likelihood,
+        impact,
+        score: likelihood * impact,
+        status: 'Inherent',
+        mitigation: mitigationPlan
+      };
 
-    setRisks(prev => [...prev, newRisk]);
-    setNewName('');
-    setShowAddForm(false);
+      setRisks(prev => [...prev, newRisk]);
+      setNewName('');
+      setShowAddForm(false);
+    } catch (error) {
+      console.error("Failed to generate mitigation plan", error);
+      alert("Failed to reach Vercel backend. Make sure the API is running.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Determine threat level color
@@ -319,8 +321,11 @@ export default function RiskRegister() {
                 <input type="number" min="1" max="5" className="cyber-input" style={{ width: '60px', padding: '6px' }} value={newImpact} onChange={(e) => setNewImpact(Number(e.target.value))} />
               </div>
               <div style={{ marginLeft: 'auto', display: 'flex', gap: '10px' }}>
-                <button type="button" className="cyber-btn cyber-btn-secondary" style={{ padding: '6px 12px' }} onClick={() => setShowAddForm(false)}>Cancel</button>
-                <button type="submit" className="cyber-btn cyber-btn-success" style={{ padding: '6px 12px' }}>Confirm Add</button>
+                <button type="button" className="cyber-btn cyber-btn-secondary" style={{ padding: '6px 12px' }} onClick={() => setShowAddForm(false)} disabled={isSubmitting}>Cancel</button>
+                <button type="submit" className="cyber-btn cyber-btn-success" style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px' }} disabled={isSubmitting}>
+                  {isSubmitting ? <Loader2 className="animate-spin" style={{ width: '14px', height: '14px' }} /> : null}
+                  {isSubmitting ? 'Generating Mitigation...' : 'Confirm Add'}
+                </button>
               </div>
             </div>
           </form>

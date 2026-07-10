@@ -204,3 +204,27 @@ export async function analyzePolicyWithBackend(
   data.framework = framework;
   return data;
 }
+
+export async function generateMitigationWithBackend(
+  riskName: string,
+  category: string,
+  likelihood: number,
+  impact: number
+): Promise<any> {
+  const response = await fetch(`/api/mitigate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      risk_name: riskName,
+      category: category,
+      likelihood: likelihood,
+      impact: impact
+    }),
+  });
+
+  if (!response.ok) {
+    throw new OnlineEngineError(`Backend API failed (status ${response.status}).`);
+  }
+
+  return await response.json();
+}

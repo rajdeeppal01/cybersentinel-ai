@@ -449,3 +449,71 @@ async def autonomous_remediation(req: TriageRequest):
         actions_taken.append(reply)
         
     return {"status": "success", "actions": actions_taken}
+
+class MitigateRequest(BaseModel):
+    risk_name: str
+    category: str
+    likelihood: int
+    impact: int
+
+@app.post("/api/mitigate")
+async def mitigate_risk(req: MitigateRequest):
+    norm = req.risk_name.lower()
+    
+    # Default fallback
+    steps = [
+        'Document asset mapping structure and audit credentials.',
+        'Define access restrictions and network isolation strategies.',
+        'Conduct testing protocols at defined intervals.',
+        '[VERCEL-BACKEND-DYNAMIC-HEURISTICS]'
+    ]
+    cost = 'TBD upon operational deployment'
+    effort = 'Medium'
+    controls = 'NIST CSF v2.0 Controls'
+    
+    if 'password' in norm or 'mfa' in norm or 'authentication' in norm:
+        steps = [
+            'Enforce Multi-Factor Authentication (MFA) across all user access points.',
+            'Implement strict password complexity and rotation policies.',
+            'Configure access audits to alert on off-hour or geofenced connection logins.',
+            '[VERCEL-BACKEND-DYNAMIC-HEURISTICS]'
+        ]
+        cost = 'Low ($2-$5 per user/month SaaS license)'
+        controls = 'SOC 2 CC6.1 / ISO 27001 A.9.4.2'
+    elif 'backup' in norm or 'database' in norm or 'ransomware' in norm:
+        steps = [
+            'Set up automated, nightly encrypted backups to isolated cloud buckets.',
+            'Set up air-gapped write-once read-many (WORM) parameters for archive objects.',
+            'Run quarterly restoration verification testing.',
+            '[VERCEL-BACKEND-DYNAMIC-HEURISTICS]'
+        ]
+        cost = 'Medium ($100-$300/month backup storage infrastructure costs)'
+        controls = 'ISO 27001 A.12.3.1 / SOC 2 CC8.1'
+        effort = 'High'
+    elif 'training' in norm or 'phishing' in norm or 'awareness' in norm:
+        steps = [
+            'Implement mandatory security awareness training modules for all staff annually.',
+            'Conduct quarterly simulated phishing campaigns.',
+            'Track compliance and escalate non-participants to HR.',
+            '[VERCEL-BACKEND-DYNAMIC-HEURISTICS]'
+        ]
+        cost = 'Low (E-learning course licenses)'
+        controls = 'HIPAA 164.308(a)(5) / ISO 27001 A.7.2.2'
+    elif 'patch' in norm or 'vulnerability' in norm or 'dependency' in norm:
+        steps = [
+            'Implement automated vulnerability scanning in the CI/CD pipeline.',
+            'Establish an SLA for patching critical CVEs within 48 hours.',
+            'Maintain a comprehensive Software Bill of Materials (SBOM).',
+            '[VERCEL-BACKEND-DYNAMIC-HEURISTICS]'
+        ]
+        cost = 'High (Requires dedicated DevSecOps tooling)'
+        controls = 'NIST PR.IP-12 / SOC 2 CC7.1'
+        effort = 'High'
+
+    return {
+        "steps": steps,
+        "cost": cost,
+        "effort": effort,
+        "residualScore": max(1, int((req.likelihood * req.impact) * 0.3)),
+        "controls": controls
+    }
