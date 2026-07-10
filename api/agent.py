@@ -93,7 +93,7 @@ async def autonomous_triage(req: TriageRequest):
         f"Be precise about MITRE ATT&CK codes."
     )
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
     
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
@@ -162,7 +162,7 @@ async def autonomous_remediation(req: TriageRequest):
         f"If it is benign, do nothing and say 'Benign'."
     )
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
     
     payload = {
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
