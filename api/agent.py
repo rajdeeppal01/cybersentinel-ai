@@ -132,7 +132,7 @@ async def autonomous_triage(req: TriageRequest):
         resp = await client.post(url, json=payload, headers={"Content-Type": "application/json"})
         
     if resp.status_code != 200:
-        raise HTTPException(status_code=500, detail="LLM API Error")
+        raise HTTPException(status_code=500, detail=f"LLM API Error: {resp.status_code} - {resp.text}")
         
     data = resp.json()
     text = data["candidates"][0]["content"]["parts"][0]["text"]
@@ -172,7 +172,7 @@ async def autonomous_remediation(req: TriageRequest):
         resp = await client.post(url, json=payload, headers={"Content-Type": "application/json"})
         
     if resp.status_code != 200:
-        raise HTTPException(status_code=500, detail="LLM API Error")
+        raise HTTPException(status_code=500, detail=f"LLM API Error: {resp.status_code} - {resp.text}")
         
     data = resp.json()
     parts = data["candidates"][0]["content"].get("parts", [])
