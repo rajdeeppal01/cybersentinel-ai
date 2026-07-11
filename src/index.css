@@ -217,9 +217,18 @@ body {
 }
 
 .cyber-panel:hover {
-  transform: translateY(-6px) scale(1.01) rotate(0.5deg);
+  transform: translateY(-6px) scale(1.01) rotate(0deg);
+  animation: card-wobble 0.6s ease-in-out;
   border-color: rgba(255, 255, 255, 0.16);
   box-shadow: 0 40px 80px -15px rgba(0, 0, 0, 0.8);
+}
+
+@keyframes card-wobble {
+  0% { transform: translateY(-6px) scale(1.01) rotate(0deg); }
+  25% { transform: translateY(-6px) scale(1.01) rotate(1deg); }
+  50% { transform: translateY(-6px) scale(1.01) rotate(-1deg); }
+  75% { transform: translateY(-6px) scale(1.01) rotate(0.5deg); }
+  100% { transform: translateY(-6px) scale(1.01) rotate(0deg); }
 }
 
 /* Bouncy Tactile Buttons */

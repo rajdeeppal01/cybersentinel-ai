@@ -162,8 +162,8 @@ export default function App() {
               CYBER-SOC<br />
               SEC-GRC PORTAL
             </h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', maxWidth: '520px', lineHeight: '1.6', marginBottom: '32px' }}>
-              Audit compliance regulations, trace malicious attack flows, score phishing threats, and trigger exploit simulations inside an interactive, wobbly security sandbox.
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', maxWidth: '540px', lineHeight: '1.6', marginBottom: '32px' }}>
+              Audit compliance regulations, trace malicious attack flows, score phishing threats, and trigger exploit simulations powered by a dynamic cloud-based AI heuristics engine.
             </p>
 
             {/* Terminal input & start button */}
