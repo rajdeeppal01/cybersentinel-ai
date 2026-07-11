@@ -486,7 +486,7 @@ cat /etc/passwd`
       {completedReport && (
         <div className="cyber-panel fade-in" style={{ gridColumn: 'span 12', marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '18px', border: '1px solid rgba(255, 94, 98, 0.3)', background: 'rgba(18, 22, 47, 0.65)' }}>
           <h3 className="tech-font" style={{ fontSize: '1rem', color: 'var(--neon-red)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-            <ShieldAlert style={{ width: '18px', height: '18px' }} /> AI POST-INCIDENT FORENSIC REPORT (PLAIN ENGLISH)
+            <ShieldAlert style={{ width: '18px', height: '18px' }} /> AI POST-INCIDENT FORENSIC REPORT
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '20px' }}>
             <div style={{ gridColumn: 'span 6', display: 'flex', flexDirection: 'column', gap: '14px' }}>
