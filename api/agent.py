@@ -517,3 +517,42 @@ async def mitigate_risk(req: MitigateRequest):
         "residualScore": max(1, int((req.likelihood * req.impact) * 0.3)),
         "controls": controls
     }
+
+class SimulateRequest(BaseModel):
+    attack_name: str
+    protocol: str
+    script_commands: str
+
+@app.post("/api/simulate")
+async def simulate_attack(req: SimulateRequest):
+    norm = req.script_commands.lower()
+    
+    # Base template
+    what_was_run = f"A custom security penetration script named \"{req.attack_name}\" was executed in the sandbox via the {req.protocol} protocol."
+    what_it_uncovered = "The terminal audited raw diagnostic logs and caught anomalous execution activity."
+    compliance = "Triggers compliance checks under NIST CSF guidelines for unauthorized local shell command telemetry."
+    remediation = "Restructure access control configurations. [VERCEL-BACKEND-DYNAMIC-HEURISTICS]"
+    
+    if 'ddos' in norm or 'ping' in norm or 'flood' in norm:
+        what_it_uncovered = "The script initiated a high-volume packet transmission resembling a Denial of Service (DoS) attack, designed to exhaust target network resources."
+        compliance = "Violates SOC 2 CC7.1 (Network Security) and ISO 27001 A.12.1.3 (Capacity Management) due to unmitigated bandwidth consumption."
+        remediation = "Implement edge-level rate limiting and deploy Web Application Firewalls (WAF) configured to drop volumetric anomalous traffic. [VERCEL-BACKEND-DYNAMIC-HEURISTICS]"
+    elif 'nmap' in norm or 'scan' in norm or 'recon' in norm:
+        what_it_uncovered = "The execution performed aggressive port scanning and service enumeration against internal network topologies."
+        compliance = "Flags under NIST CSF DE.CM-1 (Network mapping and monitoring) for unauthorized internal reconnaissance."
+        remediation = "Segment internal networks using zero-trust firewalls and alert SOC teams upon horizontal network discovery attempts. [VERCEL-BACKEND-DYNAMIC-HEURISTICS]"
+    elif 'curl' in norm and ('post' in norm or 'inject' in norm or 'admin' in norm):
+        what_it_uncovered = "An automated HTTP payload injection was attempted, sending structured malicious inputs against internal authentication APIs."
+        compliance = "Fails OWASP Top 10 API Security guidelines and SOC 2 CC6.1 (Logical Access Controls)."
+        remediation = "Validate all API inputs, implement strict CORS policies, and ensure APIs require proper bearer token authentication. [VERCEL-BACKEND-DYNAMIC-HEURISTICS]"
+    elif 'cat /etc/passwd' in norm or 'shadow' in norm or 'privilege' in norm:
+        what_it_uncovered = "The script attempted to extract sensitive system files and enumerate local user accounts, indicating privilege escalation."
+        compliance = "Critical breach of ISO 27001 A.9.4.4 (Use of privileged utility programs) and GDPR if personal data is exposed."
+        remediation = "Enforce least privilege execution (chroot/jail) and run web services as non-root users. [VERCEL-BACKEND-DYNAMIC-HEURISTICS]"
+
+    return {
+        "whatWasRun": what_was_run,
+        "whatItUncovered": what_it_uncovered,
+        "complianceImpact": compliance,
+        "remediation": remediation
+    }

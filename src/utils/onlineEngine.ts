@@ -228,3 +228,25 @@ export async function generateMitigationWithBackend(
 
   return await response.json();
 }
+
+export async function simulateAttackWithBackend(
+  attackName: string,
+  protocol: string,
+  scriptCommands: string
+): Promise<any> {
+  const response = await fetch(`/api/simulate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      attack_name: attackName,
+      protocol: protocol,
+      script_commands: scriptCommands
+    }),
+  });
+
+  if (!response.ok) {
+    throw new OnlineEngineError(`Backend API failed (status ${response.status}).`);
+  }
+
+  return await response.json();
+}
