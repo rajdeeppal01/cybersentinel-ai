@@ -210,9 +210,6 @@ export default function App() {
           </div>
 
           {/* Dummy footer node */}
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', zIndex: 10, marginBottom: '10px' }}>
-            CYBERSENTINEL FRAMEWORK • BUILT FOR RECRUITERS
-          </div>
         </div>
       ) : (
         /* View: Main Workspace Hub (Console) */
@@ -329,8 +326,6 @@ export default function App() {
             </div>
             <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
               <span>CYBERSENTINEL SOC CORE v1.0.0</span>
-              <span>•</span>
-              <span style={{ color: 'var(--neon-cyan)' }}>AI INTEGRATION DEMO</span>
             </div>
           </footer>
         </div>
