@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { SecurityEvent } from '../utils/aiEngine';
-import { Terminal, Play, RefreshCw, Cpu, Layers, ShieldAlert, Loader2 } from 'lucide-react';
+import { Terminal, Play, RefreshCw, Cpu, Layers, ShieldAlert } from 'lucide-react';
 import { simulateAttackWithBackend } from '../utils/onlineEngine';
 
 interface AttackSandboxProps {
