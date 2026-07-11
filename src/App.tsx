@@ -146,9 +146,7 @@ export default function App() {
               <span>CYBERSENTINEL <span style={{ color: 'var(--neon-red)' }}>AI</span></span>
             </div>
             <div style={{ display: 'flex', gap: '20px', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>
-              <span style={{ cursor: 'pointer' }} onClick={() => setView('hub')}>Overview</span>
-              <span style={{ cursor: 'pointer' }} onClick={() => { setView('hub'); setActiveTab('analyzer'); }}>Threat Analyzer</span>
-              <span style={{ cursor: 'pointer' }} onClick={() => { setView('hub'); setActiveTab('grc'); }}>GRC Auditor</span>
+              {/* Removed navigation links per user request */}
             </div>
             <button className="cyber-btn" style={{ padding: '8px 18px', fontSize: '0.75rem' }} onClick={() => setView('hub')}>
               Go to Hub
