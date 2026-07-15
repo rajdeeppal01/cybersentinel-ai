@@ -339,7 +339,7 @@ async def autonomous_triage(req: TriageRequest):
     mitre = "T1078: Valid Accounts"
     desc = "Unusual pattern observed in logs."
     
-    if "union select" in log_text or "1=1" in log_text:
+    if "union select" in log_text or "1=1" in log_text or "un/**/ion sel/**/ect" in log_text:
         threat = "SQL Injection Attack"
         severity = "critical"
         confidence = 98

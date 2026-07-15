@@ -115,9 +115,16 @@ export const POLICY_SAMPLES = [
 
 // Local analysis parser (Rule-based security diagnostics engine)
 export function analyzeLogLocal(logText: string): LogAnalysisResult {
-  const normalized = logText.toLowerCase();
+  let normalized = logText.toLowerCase();
+  try {
+    normalized = decodeURIComponent(normalized);
+  } catch (e) {
+    // ignore malformed URI
+  }
+  // Strip common obfuscation patterns like /**/ for SQLi detection
+  const deobfuscated = normalized.replace(/\/\*\*\//g, '');
 
-  if (normalized.includes('union') && normalized.includes('select') && (normalized.includes('users') || normalized.includes('columns') || normalized.includes('--'))) {
+  if (deobfuscated.includes('union') && deobfuscated.includes('select') && (deobfuscated.includes('users') || deobfuscated.includes('columns') || deobfuscated.includes('--'))) {
     return {
       detectedThreat: 'SQL Injection (SQLi) Attempt',
       confidence: 96,
@@ -224,6 +231,96 @@ LOG4J_FORMAT_MSG_NO_LOOKUPS=true
       remediationSnippet: `# PowerShell Command to identify and block unauthorized process executions:
 Stop-Process -Id 4892 -Force
 Set-Service -Name "VolumeShadowCopy" -StartupType Automatic`
+    };
+  }
+
+  // 1. Directory Traversal (LFI)
+  if (normalized.includes('../') || normalized.includes('..%2f') || normalized.includes('/etc/shadow') || normalized.includes('/etc/passwd')) {
+    return {
+      detectedThreat: 'Path Traversal (Local File Inclusion)',
+      confidence: 97,
+      severity: 'high',
+      mitreCode: 'T1190',
+      mitreName: 'Exploit Public-Facing Application',
+      mitreDescription: 'Adversaries may exploit path traversal vulnerabilities to access files and directories stored outside the web root folder.',
+      grcControls: {
+        nist: 'PR.DS-5 (Data Protection)',
+        soc2: 'CC6.6 (Logical Access Security)',
+        iso27001: 'A.14.2.1 (Secure development policy)'
+      },
+      analysisSummary: 'Detected a Path Traversal attempt ("../" sequences) targeting sensitive OS configuration files. The attacker is attempting to break out of the web directory to read local system files.',
+      impact: 'High risk of exposing system credentials, private keys, or configuration data, leading to full server compromise.',
+      incidentResponsePlaybook: [
+        'Containment: Block the source IP address immediately.',
+        'Investigation: Check web server logs to see if the server returned HTTP 200 with a large payload size, which indicates the file was successfully read.',
+        'Remediation: Implement strict input validation on file path parameters and run the application with least privilege (chroot jail).'
+      ],
+      remediationSnippet: `// Node.js Express Secure Path Validation:
+const safePath = path.join(__dirname, 'public', path.basename(req.query.file));
+if (!safePath.startsWith(path.join(__dirname, 'public'))) {
+    return res.status(403).send('Forbidden');
+}`
+    };
+  }
+
+  // 2. Cross-Site Scripting (XSS)
+  if (normalized.includes('<script>') || normalized.includes('%3cscript%3e') || normalized.includes('document.cookie')) {
+    return {
+      detectedThreat: 'Cross-Site Scripting (XSS)',
+      confidence: 95,
+      severity: 'medium',
+      mitreCode: 'T1189',
+      mitreName: 'Drive-by Compromise',
+      mitreDescription: 'Adversaries may inject malicious scripts into web pages viewed by other users to steal session tokens or credentials.',
+      grcControls: {
+        nist: 'PR.PT-4 (Communications and Control Networks)',
+        soc2: 'CC7.1 (Vulnerability Management)',
+        iso27001: 'A.14.2.8 (System security testing)'
+      },
+      analysisSummary: 'Detected an injected JavaScript payload containing script tags or cookie extraction methods. The attacker aims to execute code in the browsers of legitimate users.',
+      impact: 'Medium risk of session hijacking, account takeover, and unauthorized actions performed on behalf of the victim.',
+      incidentResponsePlaybook: [
+        'Containment: Deploy WAF rules to block cross-site scripting signatures.',
+        'Investigation: Determine if the XSS payload was stored in the database (Stored XSS) or reflected in the URL.',
+        'Remediation: Enforce strict HTML sanitization and Content Security Policy (CSP) headers.'
+      ],
+      remediationSnippet: `// Secure Headers Middleware (Helmet):
+app.use(helmet.contentSecurityPolicy({
+  directives: {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'", "trusted-cdn.com"]
+  }
+}));`
+    };
+  }
+
+  // 3. OS Command Injection
+  if (normalized.includes('cat /etc/') || normalized.includes('; cat') || normalized.includes('| nc ') || normalized.includes('bash -i')) {
+    return {
+      detectedThreat: 'OS Command Injection',
+      confidence: 98,
+      severity: 'critical',
+      mitreCode: 'T1059',
+      mitreName: 'Command and Scripting Interpreter',
+      mitreDescription: 'Adversaries may abuse command interpreters to execute arbitrary operating system commands.',
+      grcControls: {
+        nist: 'PR.PT-3 (Principle of Least Privilege)',
+        soc2: 'CC6.8 (Unauthorized Software Execution)',
+        iso27001: 'A.12.5.1 (Installation of software on operational systems)'
+      },
+      analysisSummary: 'Detected shell metacharacters (; or |) followed by native OS commands (cat, nc). The attacker is attempting to execute arbitrary code directly on the host operating system.',
+      impact: 'Critical risk of immediate remote code execution (RCE) and total server takeover.',
+      incidentResponsePlaybook: [
+        'Containment: Isolate the server from the network to prevent reverse shell persistence.',
+        'Eradication: Terminate unauthorized background processes and reverse shells.',
+        'Remediation: Replace insecure system/exec calls with secure language-specific APIs that do not invoke a shell.'
+      ],
+      remediationSnippet: `// VULNERABLE:
+// exec(\`ping -c 4 \${req.body.ip}\`);
+
+// SECURE (No Shell Spawned):
+const { spawn } = require('child_process');
+spawn('ping', ['-c', '4', req.body.ip]);`
     };
   }
 

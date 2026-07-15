@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { LOG_SAMPLES, analyzeLogLocal, LogAnalysisResult } from '../utils/aiEngine';
-import { analyzeLogWithLLM, LoadProgress, upgradeEngineToPhi3 } from '../utils/webllmEngine';
 import { analyzeLogWithGemini, OnlineEngineError } from '../utils/onlineEngine';
 import { Play, HelpCircle, Code, ShieldAlert, Cpu, FileText, Sparkles } from 'lucide-react';
 
@@ -14,11 +13,7 @@ export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) 
     initialLogText ? analyzeLogLocal(initialLogText) : null
   );
   const [needsEscalation, setNeedsEscalation] = useState(false);
-  const [useLocalLLM, setUseLocalLLM] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [loadStatus, setLoadStatus] = useState<LoadProgress | null>(null);
-  const [isUpgrading, setIsUpgrading] = useState(false);
-  const [upgradeStatus, setUpgradeStatus] = useState<LoadProgress | null>(null);
   const [activeSubTab, setActiveSubTab] = useState<'diagnostic' | 'compliance' | 'playbook'>('diagnostic');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -44,36 +39,11 @@ export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) 
     setOnlineResult(null);
     setOnlineError('');
     setShowKeyInput(false);
+    
     try {
-      if (useLocalLLM) {
-        try {
-          const result = await analyzeLogWithLLM(logInput, (p) => setLoadStatus(p));
-          setAnalysisResult(result);
-          setNeedsEscalation(result.needsEscalation ?? false);
-        } catch (llmErr: any) {
-          console.error('WebLLM analysis failed:', llmErr);
-          const actualError = llmErr?.message || String(llmErr);
-          setErrorMsg(`On-device model failed (${actualError}), falling back to server backend.`);
-          
-          try {
-            const result = await analyzeLogWithGemini(logInput);
-            setAnalysisResult(result);
-            setNeedsEscalation(false);
-            // Clear the red error because the fallback succeeded, but we can optionally add a yellow warning instead.
-            // For now, let's just clear it so the user knows they got their answers.
-            setErrorMsg('');
-          } catch (backendErr: any) {
-            console.error('Backend fallback also failed:', backendErr);
-            setErrorMsg(`On-device model failed (${actualError}), AND server fallback also failed: ${backendErr?.message || String(backendErr)}`);
-          }
-        } finally {
-          setLoadStatus(null);
-        }
-      } else {
-        // Hit our Python FastAPI Backend
-        const result = await analyzeLogWithGemini(logInput);
-        setAnalysisResult(result);
-      }
+      // Use the powerful, instantly-available local heuristic engine
+      const result = analyzeLogLocal(logInput);
+      setAnalysisResult(result);
     } catch (err: any) {
       setErrorMsg(err.message);
     } finally {
@@ -85,8 +55,6 @@ export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) 
     setOnlineLoading(true);
     setOnlineError('');
     try {
-      // For escalation, we still call the backend, but since the user provided an API key in the UI for escalation,
-      // the Vercel backend handles it via its own environment variables now. We ignore the UI apiKey.
       const result = await analyzeLogWithGemini(logInput);
       setOnlineResult(result);
     } catch (err: any) {
@@ -99,27 +67,6 @@ export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) 
     }
   };
 
-  const handleUpgradeLocalModel = async () => {
-    setIsUpgrading(true);
-    setErrorMsg('');
-    try {
-      await upgradeEngineToPhi3((p) => setUpgradeStatus(p));
-      // Re-run analysis with the new model
-      const result = await analyzeLogWithLLM(logInput, (p) => setUpgradeStatus(p));
-      setAnalysisResult(result);
-      setNeedsEscalation(result.needsEscalation ?? false);
-    } catch (llmErr: any) {
-      console.error('WebLLM upgrade failed:', llmErr);
-      const actualError = llmErr?.message || String(llmErr);
-      setErrorMsg(`On-device model upgrade failed (${actualError}), falling back to server backend.`);
-      const result = await analyzeLogWithGemini(logInput);
-      setAnalysisResult(result);
-      setNeedsEscalation(false);
-    } finally {
-      setIsUpgrading(false);
-      setUpgradeStatus(null);
-    }
-  };
 
   return (
     <div className="cyber-grid-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '20px', padding: '20px' }}>
@@ -147,28 +94,6 @@ export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) 
           </div>
         </div>
 
-        {/* On-Device LLM Toggle */}
-        <div style={{ background: 'rgba(0, 240, 255, 0.03)', border: '1px solid rgba(0, 240, 255, 0.1)', padding: '12px', borderRadius: '4px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span className="tech-font" style={{ fontSize: '0.75rem', color: '#fff' }}>ON-DEVICE AI ANALYSIS</span>
-            <input 
-              type="checkbox" 
-              checked={useLocalLLM} 
-              onChange={(e) => setUseLocalLLM(e.target.checked)} 
-              style={{ cursor: 'pointer' }}
-            />
-          </div>
-          {useLocalLLM && (
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'block', marginTop: '6px' }}>
-              Runs a small language model directly in your browser (first run downloads the model, then it's cached).
-            </span>
-          )}
-          {loadStatus && (
-            <span style={{ fontSize: '0.65rem', color: 'var(--neon-cyan)', display: 'block', marginTop: '6px' }}>
-              {loadStatus.text} ({Math.round(loadStatus.progress * 100)}%)
-            </span>
-          )}
-        </div>
 
         {/* Log Input Editor */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -240,7 +165,7 @@ export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) 
             {needsEscalation && (
               <div style={{ border: '1px solid var(--neon-orange)', borderRadius: '4px', marginBottom: '20px', overflow: 'hidden' }}>
                 <div style={{ color: 'var(--neon-orange)', background: 'rgba(255, 159, 0, 0.05)', padding: '10px', fontSize: '0.75rem' }}>
-                  On-device model wasn't fully confident on this one.
+                  The local heuristic engine found generic anomalous activity. Escalation to an AI model is recommended.
                 </div>
 
                 {!onlineResult && (
@@ -254,24 +179,7 @@ export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) 
                         >
                           <Sparkles style={{ width: '14px', height: '14px' }} /> Get a second opinion (bring your own Gemini API key)
                         </button>
-                        
-                        <button
-                          className="cyber-btn cyber-btn-primary"
-                          style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}
-                          onClick={handleUpgradeLocalModel}
-                          disabled={isUpgrading}
-                        >
-                          {isUpgrading ? (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <Cpu style={{ animation: 'spin 2s linear infinite', width: '14px', height: '14px' }} /> 
-                              {upgradeStatus ? `${upgradeStatus.text} (${Math.round(upgradeStatus.progress * 100)}%)` : 'Upgrading AI...'}
-                            </span>
-                          ) : (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <Cpu style={{ width: '14px', height: '14px' }} /> Upgrade Local AI Model (Phi-3, ~2.2GB, Requires Storage Permission)
-                            </span>
-                          )}
-                        </button>
+
                       </div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
