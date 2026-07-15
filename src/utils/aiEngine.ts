@@ -326,24 +326,25 @@ spawn('ping', ['-c', '4', req.body.ip]);`
 
   // Fallback heuristic for custom pasted logs
   return {
-    detectedThreat: 'Generic Suspicious Log Activity Detected',
-    confidence: 65,
-    severity: 'medium',
-    mitreCode: 'T1565',
-    mitreName: 'Data Manipulation / Defense Evasion',
-    mitreDescription: 'The analyzed event does not match standard templates, but contains anomalous parameter shifts, potential path traversal, or privilege indicators.',
+    detectedThreat: 'Unrecognized Activity (Heuristic Engine Failed)',
+    confidence: 10,
+    severity: 'low',
+    mitreCode: 'Unknown',
+    mitreName: 'Uncategorized',
+    mitreDescription: 'The current heuristic engine ruleset cannot identify this activity.',
     grcControls: {
-      nist: 'DE.AE-1 (Detecting Anomaly), PR.PT-4 (Network Protection)',
-      soc2: 'CC7.2 (Anomaly Detection and Threat Intelligence)',
-      iso27001: 'A.12.4.1 (Event Logging)'
+      nist: 'DE.AE-2 (Analyze Events)',
+      soc2: 'CC7.2 (Security Event Monitoring)',
+      iso27001: 'A.16.1.2 (Reporting security events)'
     },
-    analysisSummary: 'Analysis of the provided text suggests unexpected activity logs. The AI Engine detects structural syntax shifts that merit verification by a Security Analyst.',
-    impact: 'System settings shifts or access anomalies that could indicate an active recon scan or data harvesting.',
+    analysisSummary: 'HONEST DISCLOSURE: Our simple rule-based heuristic engine completely failed to identify this attack. Because this engine relies on strictly hardcoded keyword matches, it cannot detect complex, obfuscated, or unexpected attacks (like Blind SQLi). This is a fundamental limitation of traditional heuristic systems.',
+    impact: 'Unknown. Without a true AI model to understand the contextual intent of the payload, we cannot accurately assess the impact of this log.',
     incidentResponsePlaybook: [
-      'Triage: Cross-reference this log line with matching system transaction histories.',
-      'Auditing: Inspect whether the source IP has made successful authenticated sessions recently.',
-      'Monitoring: Set up specialized alert filters for this endpoint.'
-    ]
+      'Manual Review: A human security analyst must manually parse and interpret this raw log.',
+      'System Upgrade: Consider migrating from a rule-based SIEM to an LLM-powered diagnostic pipeline to catch zero-day variations.'
+    ],
+    remediationSnippet: `// The heuristic engine failed because it lacks rules for this payload.
+// You cannot write an if/else statement for every possible attack mutation.`
   };
 }
 
