@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { LOG_SAMPLES, analyzeLogLocal, LogAnalysisResult } from '../utils/aiEngine';
-import { analyzeLogWithLLM, LoadProgress } from '../utils/webllmEngine';
+import { analyzeLogWithLLM, LoadProgress, upgradeEngineToPhi3 } from '../utils/webllmEngine';
 import { analyzeLogWithGemini, OnlineEngineError } from '../utils/onlineEngine';
 import { Play, HelpCircle, Code, ShieldAlert, Cpu, FileText, Sparkles } from 'lucide-react';
 
@@ -17,6 +17,8 @@ export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) 
   const [useLocalLLM, setUseLocalLLM] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadStatus, setLoadStatus] = useState<LoadProgress | null>(null);
+  const [isUpgrading, setIsUpgrading] = useState(false);
+  const [upgradeStatus, setUpgradeStatus] = useState<LoadProgress | null>(null);
   const [activeSubTab, setActiveSubTab] = useState<'diagnostic' | 'compliance' | 'playbook'>('diagnostic');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -84,6 +86,28 @@ export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) 
       );
     } finally {
       setOnlineLoading(false);
+    }
+  };
+
+  const handleUpgradeLocalModel = async () => {
+    setIsUpgrading(true);
+    setErrorMsg('');
+    try {
+      await upgradeEngineToPhi3((p) => setUpgradeStatus(p));
+      // Re-run analysis with the new model
+      const result = await analyzeLogWithLLM(logInput, (p) => setUpgradeStatus(p));
+      setAnalysisResult(result);
+      setNeedsEscalation(result.needsEscalation ?? false);
+    } catch (llmErr: any) {
+      console.error('WebLLM upgrade failed:', llmErr);
+      const actualError = llmErr?.message || String(llmErr);
+      setErrorMsg(`On-device model upgrade failed (${actualError}), falling back to server backend.`);
+      const result = await analyzeLogWithGemini(logInput);
+      setAnalysisResult(result);
+      setNeedsEscalation(false);
+    } finally {
+      setIsUpgrading(false);
+      setUpgradeStatus(null);
     }
   };
 
@@ -212,13 +236,33 @@ export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) 
                 {!onlineResult && (
                   <div style={{ padding: '12px', background: 'rgba(255, 159, 0, 0.02)' }}>
                     {!showKeyInput ? (
-                      <button
-                        className="cyber-btn cyber-btn-secondary"
-                        style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                        onClick={() => setShowKeyInput(true)}
-                      >
-                        <Sparkles style={{ width: '14px', height: '14px' }} /> Get a second opinion (bring your own Gemini API key)
-                      </button>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <button
+                          className="cyber-btn cyber-btn-secondary"
+                          style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                          onClick={() => setShowKeyInput(true)}
+                        >
+                          <Sparkles style={{ width: '14px', height: '14px' }} /> Get a second opinion (bring your own Gemini API key)
+                        </button>
+                        
+                        <button
+                          className="cyber-btn cyber-btn-primary"
+                          style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}
+                          onClick={handleUpgradeLocalModel}
+                          disabled={isUpgrading}
+                        >
+                          {isUpgrading ? (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <Cpu style={{ animation: 'spin 2s linear infinite', width: '14px', height: '14px' }} /> 
+                              {upgradeStatus ? `${upgradeStatus.text} (${Math.round(upgradeStatus.progress * 100)}%)` : 'Upgrading AI...'}
+                            </span>
+                          ) : (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <Cpu style={{ width: '14px', height: '14px' }} /> Upgrade Local AI Model (Phi-3, ~2.2GB, Requires Storage Permission)
+                            </span>
+                          )}
+                        </button>
+                      </div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>

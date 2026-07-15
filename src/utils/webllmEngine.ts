@@ -1,7 +1,7 @@
 import { CreateMLCEngine, MLCEngine } from "@mlc-ai/web-llm";
 import { LogAnalysisResult, PhishingAnalysisResult, PolicyAuditResult } from "./aiEngine";
 
-const MODEL_ID = "Phi-3-mini-4k-instruct-q4f16_1-MLC";
+let currentModelId = "TinyLlama-1.1B-Chat-v1.0-q4f16_1-MLC";
 
 let enginePromise: Promise<MLCEngine> | null = null;
 
@@ -13,13 +13,30 @@ export type LoadProgress = { text: string; progress: number };
  */
 export function getEngine(onProgress?: (p: LoadProgress) => void): Promise<MLCEngine> {
   if (!enginePromise) {
-    enginePromise = CreateMLCEngine(MODEL_ID, {
+    enginePromise = CreateMLCEngine(currentModelId, {
       initProgressCallback: (report) => {
         onProgress?.({ text: report.text, progress: report.progress });
       },
     });
   }
   return enginePromise;
+}
+
+/**
+ * Requests permanent storage, changes model to Phi-3, and reloads the engine.
+ */
+export async function upgradeEngineToPhi3(onProgress?: (p: LoadProgress) => void): Promise<MLCEngine> {
+  if (navigator.storage && navigator.storage.persist) {
+    try {
+      await navigator.storage.persist();
+    } catch (err) {
+      console.warn("Storage persist request failed or denied:", err);
+    }
+  }
+  
+  currentModelId = "Phi-3-mini-4k-instruct-q4f16_1-MLC";
+  enginePromise = null; // Clear old engine
+  return getEngine(onProgress);
 }
 
 const SYSTEM_PROMPT = `You are a security log analysis engine. You will be given a raw log snippet.
