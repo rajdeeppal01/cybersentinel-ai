@@ -1,7 +1,7 @@
 import { CreateMLCEngine, MLCEngine } from "@mlc-ai/web-llm";
 import { LogAnalysisResult, PhishingAnalysisResult, PolicyAuditResult } from "./aiEngine";
 
-const MODEL_ID = "Qwen2.5-1.5B-Instruct-q4f16_1-MLC";
+const MODEL_ID = "Phi-3-mini-4k-instruct-q4f16_1-MLC";
 
 let enginePromise: Promise<MLCEngine> | null = null;
 
