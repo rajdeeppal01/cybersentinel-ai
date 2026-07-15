@@ -10,7 +10,10 @@ export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) 
   const [logInput, setLogInput] = useState(initialLogText || LOG_SAMPLES[0].text);
   const [analysisResult, setAnalysisResult] = useState<LogAnalysisResult | null>(
     initialLogText ? analyzeLogLocal(initialLogText) : null
-
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeSubTab, setActiveSubTab] = useState<'diagnostic' | 'compliance' | 'playbook'>('diagnostic');
+  const [errorMsg, setErrorMsg] = useState('');
 
   const loadSample = (index: number) => {
     setLogInput(LOG_SAMPLES[index].text);
