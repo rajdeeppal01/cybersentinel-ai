@@ -48,9 +48,10 @@ export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) 
           const result = await analyzeLogWithLLM(logInput, (p) => setLoadStatus(p));
           setAnalysisResult(result);
           setNeedsEscalation(result.needsEscalation ?? false);
-        } catch (llmErr) {
+        } catch (llmErr: any) {
           console.error('WebLLM analysis failed:', llmErr);
-          setErrorMsg('On-device model had trouble with this input, falling back to server backend.');
+          const actualError = llmErr?.message || String(llmErr);
+          setErrorMsg(`On-device model failed (${actualError}), falling back to server backend.`);
           const result = await analyzeLogWithGemini(logInput);
           setAnalysisResult(result);
         } finally {
