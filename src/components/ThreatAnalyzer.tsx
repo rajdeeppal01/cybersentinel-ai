@@ -44,6 +44,11 @@ export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) 
       // Use the powerful, instantly-available local heuristic engine
       const result = analyzeLogLocal(logInput);
       setAnalysisResult(result);
+      
+      // If the local engine returns "Generic Suspicious Log Activity Detected", we suggest an escalation
+      if (result.detectedThreat === 'Generic Suspicious Log Activity Detected') {
+        setNeedsEscalation(true);
+      }
     } catch (err: any) {
       setErrorMsg(err.message);
     } finally {
