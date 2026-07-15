@@ -54,8 +54,15 @@ export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) 
           console.error('WebLLM analysis failed:', llmErr);
           const actualError = llmErr?.message || String(llmErr);
           setErrorMsg(`On-device model failed (${actualError}), falling back to server backend.`);
-          const result = await analyzeLogWithGemini(logInput);
-          setAnalysisResult(result);
+          
+          try {
+            const result = await analyzeLogWithGemini(logInput);
+            setAnalysisResult(result);
+            setNeedsEscalation(false);
+          } catch (backendErr: any) {
+            console.error('Backend fallback also failed:', backendErr);
+            setErrorMsg(`On-device model failed (${actualError}), AND server fallback also failed: ${backendErr?.message || String(backendErr)}`);
+          }
         } finally {
           setLoadStatus(null);
         }
