@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Shield, ShieldAlert, Sparkles, X, Plus, LayoutGrid, Loader2 } from 'lucide-react';
+import { generateMitigationWithBackend } from '../utils/onlineEngine';
 
 interface RiskItem {
   id: string;
@@ -142,18 +143,7 @@ export default function RiskRegister() {
     const impact = Number(newImpact);
 
     try {
-      // Create a mock heuristic mitigation plan locally rather than hitting an LLM backend
-      const mitigationPlan = {
-        steps: [
-          'Review local configuration guidelines for this risk category.',
-          'Apply standard vendor security patches.',
-          'Consult with the internal security team for detailed steps.'
-        ],
-        cost: 'TBD',
-        effort: 'Medium' as const,
-        residualScore: Math.max(1, Math.floor(likelihood * impact * 0.4)),
-        controls: 'General Best Practices'
-      };
+      const mitigationPlan = await generateMitigationWithBackend(newName, newCategory, likelihood, impact);
       
       const newRisk: RiskItem = {
         id: `RSK-0${risks.length + 1}`,
@@ -170,7 +160,8 @@ export default function RiskRegister() {
       setNewName('');
       setShowAddForm(false);
     } catch (error) {
-      console.error(error);
+      console.error("Failed to generate mitigation plan", error);
+      alert("Failed to reach Vercel backend. Make sure the API is running.");
     } finally {
       setIsSubmitting(false);
     }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { SecurityEvent } from '../utils/aiEngine';
 import { Terminal, Play, RefreshCw, Cpu, Layers, ShieldAlert } from 'lucide-react';
+import { simulateAttackWithBackend } from '../utils/onlineEngine';
 
 interface AttackSandboxProps {
   onTriggerAlert: (alert: SecurityEvent) => void;
@@ -218,12 +219,19 @@ cat /etc/passwd`
     terminalLogs.push(`[ALERT] AI Endpoint Protection Agent intercepted custom command sequence!`);
     terminalLogs.push(`[GRC WARNING] Compliance risk flag triggered: NIST CSF PR.IP-4 / SOC 2 CC7.1`);
 
-    let plainEnglishReport: any = {
-      whatWasRun: `A custom security penetration script named "${customName}" was written and executed inside the sandboxed environment. The script executed commands utilizing the ${customProtocol} protocol.`,
-      whatItUncovered: `The script ran the following command parameters in sequence:\n${lines.map(l => `  - \`${l}\``).join('\n')}\nThe terminal audited raw diagnostic logs and caught anomalous execution activity.`,
-      complianceImpact: `Triggers compliance checks under NIST CSF guidelines and SOC 2 Trust Principles (Security & Monitoring) for unauthorized local shell command telemetry.`,
-      remediation: `Restructure access control configurations to restrict non-administrative local accounts from spawning high-privilege shell terminals. Enforce strict logging controls on localhost terminal telemetry.`
-    };
+    let plainEnglishReport: any;
+    try {
+      setRunningAttack(customName); // Briefly show running state while fetching
+      plainEnglishReport = await simulateAttackWithBackend(customName, customProtocol, customScript);
+    } catch (err) {
+      console.error("Backend failed, falling back to mock", err);
+      plainEnglishReport = {
+        whatWasRun: `A custom security penetration script named "${customName}" was written and executed inside the sandboxed environment. The script executed commands utilizing the ${customProtocol} protocol.`,
+        whatItUncovered: `The script ran the following command parameters in sequence:\n${lines.map(l => `  - \`${l}\``).join('\n')}\nThe terminal audited raw diagnostic logs and caught anomalous execution activity.`,
+        complianceImpact: `Triggers compliance checks under NIST CSF guidelines and SOC 2 Trust Principles (Security & Monitoring) for unauthorized local shell command telemetry.`,
+        remediation: `Restructure access control configurations to restrict non-administrative local accounts from spawning high-privilege shell terminals. Enforce strict logging controls on localhost terminal telemetry.`
+      };
+    }
     setRunningAttack(null); // Clear it before handleLaunchAttack takes over
 
     const customTemplate: AttackTemplate = {

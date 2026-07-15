@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { LOG_SAMPLES, analyzeLogLocal, LogAnalysisResult } from '../utils/aiEngine';
-import { Play, HelpCircle, Code, ShieldAlert, Cpu, FileText } from 'lucide-react';
+import { analyzeLogWithGemini, OnlineEngineError } from '../utils/onlineEngine';
+import { Play, HelpCircle, Code, ShieldAlert, Cpu, FileText, Sparkles } from 'lucide-react';
 
 interface ThreatAnalyzerProps {
   initialLogText: string;
@@ -11,27 +12,58 @@ export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) 
   const [analysisResult, setAnalysisResult] = useState<LogAnalysisResult | null>(
     initialLogText ? analyzeLogLocal(initialLogText) : null
   );
+  const [needsEscalation, setNeedsEscalation] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState<'diagnostic' | 'compliance' | 'playbook'>('diagnostic');
   const [errorMsg, setErrorMsg] = useState('');
 
+  // Tier 3 -- BYOK online escalation
+  const [showKeyInput, setShowKeyInput] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [onlineResult, setOnlineResult] = useState<LogAnalysisResult | null>(null);
+  const [onlineLoading, setOnlineLoading] = useState(false);
+  const [onlineError, setOnlineError] = useState('');
+
   const loadSample = (index: number) => {
     setLogInput(LOG_SAMPLES[index].text);
     setAnalysisResult(null);
+    setOnlineResult(null);
+    setOnlineError('');
     setErrorMsg('');
   };
 
   const handleRunAnalysis = async () => {
     setIsLoading(true);
     setErrorMsg('');
+    setNeedsEscalation(false);
+    setOnlineResult(null);
+    setOnlineError('');
+    setShowKeyInput(false);
     
     try {
+      // Use the powerful, instantly-available local heuristic engine
       const result = analyzeLogLocal(logInput);
       setAnalysisResult(result);
     } catch (err: any) {
       setErrorMsg(err.message);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleEscalate = async () => {
+    setOnlineLoading(true);
+    setOnlineError('');
+    try {
+      const result = await analyzeLogWithGemini(logInput);
+      setOnlineResult(result);
+    } catch (err: any) {
+      console.error('Online escalation failed:', err);
+      setOnlineError(
+        err instanceof OnlineEngineError ? err.message : 'Something went wrong reaching the online model.'
+      );
+    } finally {
+      setOnlineLoading(false);
     }
   };
 
@@ -130,7 +162,73 @@ export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) 
               </span>
             </div>
 
+            {needsEscalation && (
+              <div style={{ border: '1px solid var(--neon-orange)', borderRadius: '4px', marginBottom: '20px', overflow: 'hidden' }}>
+                <div style={{ color: 'var(--neon-orange)', background: 'rgba(255, 159, 0, 0.05)', padding: '10px', fontSize: '0.75rem' }}>
+                  The local heuristic engine found generic anomalous activity. Escalation to an AI model is recommended.
+                </div>
 
+                {!onlineResult && (
+                  <div style={{ padding: '12px', background: 'rgba(255, 159, 0, 0.02)' }}>
+                    {!showKeyInput ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <button
+                          className="cyber-btn cyber-btn-secondary"
+                          style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                          onClick={() => setShowKeyInput(true)}
+                        >
+                          <Sparkles style={{ width: '14px', height: '14px' }} /> Get a second opinion (bring your own Gemini API key)
+                        </button>
+
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                          Your key is used only for this request, sent directly to Google, never stored or sent anywhere else.
+                        </label>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <input
+                            type="password"
+                            placeholder="Paste your Gemini API key"
+                            value={apiKeyInput}
+                            onChange={(e) => setApiKeyInput(e.target.value)}
+                            className="cyber-input mono-font"
+                            style={{ flex: 1, fontSize: '0.75rem', background: '#050811', border: '1px solid var(--panel-border)', padding: '8px' }}
+                          />
+                          <button
+                            className="cyber-btn cyber-btn-success"
+                            style={{ fontSize: '0.7rem', whiteSpace: 'nowrap' }}
+                            onClick={handleEscalate}
+                            disabled={onlineLoading || !apiKeyInput.trim()}
+                          >
+                            {onlineLoading ? 'Analyzing...' : 'Analyze'}
+                          </button>
+                        </div>
+                        {onlineError && (
+                          <span style={{ fontSize: '0.7rem', color: 'var(--neon-red)' }}>{onlineError}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {onlineResult && (
+              <div style={{ border: '1px solid var(--neon-cyan)', borderRadius: '4px', marginBottom: '20px', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--neon-cyan)', background: 'rgba(0, 240, 255, 0.05)', padding: '10px', fontSize: '0.75rem' }}>
+                  <Sparkles style={{ width: '14px', height: '14px' }} /> ONLINE MODEL SECOND OPINION (Gemini, your API key)
+                </div>
+                <div style={{ padding: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', gap: '15px', fontSize: '0.8rem' }}>
+                    <strong>{onlineResult.detectedThreat}</strong>
+                    <span>Confidence: {onlineResult.confidence}%</span>
+                    <span>MITRE: {onlineResult.mitreCode}</span>
+                  </div>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>{onlineResult.analysisSummary}</p>
+                </div>
+              </div>
+            )}
 
             {/* Diagnostic Subtabs */}
             <div style={{ display: 'flex', borderBottom: '1px solid rgba(0, 240, 255, 0.1)', marginBottom: '15px' }}>
