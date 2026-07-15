@@ -59,6 +59,9 @@ export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) 
             const result = await analyzeLogWithGemini(logInput);
             setAnalysisResult(result);
             setNeedsEscalation(false);
+            // Clear the red error because the fallback succeeded, but we can optionally add a yellow warning instead.
+            // For now, let's just clear it so the user knows they got their answers.
+            setErrorMsg('');
           } catch (backendErr: any) {
             console.error('Backend fallback also failed:', backendErr);
             setErrorMsg(`On-device model failed (${actualError}), AND server fallback also failed: ${backendErr?.message || String(backendErr)}`);
