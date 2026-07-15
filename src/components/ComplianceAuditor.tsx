@@ -58,10 +58,18 @@ export default function ComplianceAuditor({ onUpdateScore }: ComplianceAuditorPr
           onUpdateScore(framework, result.overallScore);
         } catch (llmErr) {
           console.error('WebLLM policy audit failed:', llmErr);
-          setErrorMsg('On-device model had trouble with this input, showing rule-based result instead.');
-          const fallback = auditPolicyLocal(policyInput, framework);
-          setAuditResult(fallback);
-          onUpdateScore(framework, fallback.overallScore);
+          setErrorMsg('On-device model had trouble with this input, falling back to server backend.');
+          try {
+            const result = await analyzePolicyWithBackend(policyInput, framework);
+            setAuditResult(result);
+            onUpdateScore(framework, result.overallScore);
+          } catch (backendErr: any) {
+            console.error('Backend fallback also failed:', backendErr);
+            setErrorMsg(`On-device model failed, AND server fallback also failed: ${backendErr?.message || String(backendErr)}`);
+            const fallback = auditPolicyLocal(policyInput, framework);
+            setAuditResult(fallback);
+            onUpdateScore(framework, fallback.overallScore);
+          }
         } finally {
           setLoadStatus(null);
         }

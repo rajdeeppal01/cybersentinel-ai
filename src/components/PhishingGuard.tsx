@@ -98,8 +98,15 @@ export default function PhishingGuard() {
           setNeedsEscalation(output.needsEscalation ?? false);
         } catch (llmErr) {
           console.error('WebLLM phishing analysis failed:', llmErr);
-          setErrorMsg('On-device model had trouble with this input, showing rule-based result instead.');
-          setResult(analyzePhishingLocal(emailInput));
+          setErrorMsg('On-device model had trouble with this input, falling back to server backend.');
+          try {
+            const output = await analyzePhishingWithBackend(emailInput);
+            setResult(output);
+          } catch (backendErr: any) {
+            console.error('Backend fallback also failed:', backendErr);
+            setErrorMsg(`On-device model failed, AND server fallback also failed: ${backendErr?.message || String(backendErr)}`);
+            setResult(analyzePhishingLocal(emailInput));
+          }
         } finally {
           setLoadStatus(null);
         }
