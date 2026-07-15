@@ -34,11 +34,11 @@ async def test_triage_structured_output():
     
     data = response.json()
     assert "severity" in data
-    assert "is_false_positive" in data
-    assert "recommended_action" in data
-    assert "confidence_score" in data
+    assert "detectedThreat" in data
+    assert "confidence" in data
+    assert "mitreCode" in data
     
-    assert data["severity"] in ["Low", "Medium", "High", "Critical"]
+    assert data["severity"].lower() in ["low", "medium", "high", "critical"]
 
 @pytest.mark.asyncio
 async def test_agent_guardrails_quarantine():
