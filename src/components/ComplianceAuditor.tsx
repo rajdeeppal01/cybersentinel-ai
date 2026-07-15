@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { POLICY_SAMPLES, auditPolicyLocal, PolicyAuditResult } from '../utils/aiEngine';
-import { analyzePolicyWithLLM, LoadProgress } from '../utils/webllmEngine';
-import { analyzePolicyWithGemini, analyzePolicyWithBackend, OnlineEngineError } from '../utils/onlineEngine';
 import { ShieldCheck, ClipboardCheck, Sparkles, FileWarning, Eye, Cpu, Layers } from 'lucide-react';
 
 interface ComplianceAuditorProps {
@@ -12,21 +10,11 @@ interface ComplianceAuditorProps {
 export default function ComplianceAuditor({ onUpdateScore }: ComplianceAuditorProps) {
   const [policyInput, setPolicyInput] = useState(POLICY_SAMPLES[0].text);
   const [framework, setFramework] = useState('SOC 2');
-  const [useLocalLLM, setUseLocalLLM] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [loadStatus, setLoadStatus] = useState<LoadProgress | null>(null);
   const [auditResult, setAuditResult] = useState<PolicyAuditResult | null>(() => {
     return auditPolicyLocal(POLICY_SAMPLES[0].text, 'SOC 2');
   });
-  const [needsEscalation, setNeedsEscalation] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-
-  // Tier 3 -- BYOK online escalation
-  const [showKeyInput, setShowKeyInput] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState('');
-  const [onlineResult, setOnlineResult] = useState<PolicyAuditResult | null>(null);
-  const [onlineLoading, setOnlineLoading] = useState(false);
-  const [onlineError, setOnlineError] = useState('');
 
   const loadSample = (index: number) => {
     const sample = POLICY_SAMPLES[index];
@@ -36,60 +24,20 @@ export default function ComplianceAuditor({ onUpdateScore }: ComplianceAuditorPr
     const result = auditPolicyLocal(sample.text, sample.framework);
     setAuditResult(result);
     onUpdateScore(sample.framework, result.overallScore);
-    setNeedsEscalation(false);
-    setOnlineResult(null);
-    setOnlineError('');
     setErrorMsg('');
   };
 
   const handleRunAudit = async () => {
     setIsLoading(true);
     setErrorMsg('');
-    setNeedsEscalation(false);
-    setOnlineResult(null);
-    setOnlineError('');
-    setShowKeyInput(false);
     try {
-      if (useLocalLLM) {
-        try {
-          const result = await analyzePolicyWithLLM(policyInput, framework, (p) => setLoadStatus(p));
-          setAuditResult(result);
-          setNeedsEscalation(result.needsEscalation ?? false);
-          onUpdateScore(framework, result.overallScore);
-        } catch (llmErr) {
-          console.error('WebLLM policy audit failed:', llmErr);
-          setErrorMsg('On-device model had trouble with this input, showing rule-based result instead.');
-          const fallback = auditPolicyLocal(policyInput, framework);
-          setAuditResult(fallback);
-          onUpdateScore(framework, fallback.overallScore);
-        } finally {
-          setLoadStatus(null);
-        }
-      } else {
-        const result = await analyzePolicyWithBackend(policyInput, framework);
-        setAuditResult(result);
-        onUpdateScore(framework, result.overallScore);
-      }
+      const result = auditPolicyLocal(policyInput, framework);
+      setAuditResult(result);
+      onUpdateScore(framework, result.overallScore);
     } catch (err: any) {
       setErrorMsg(err.message);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleEscalate = async () => {
-    setOnlineLoading(true);
-    setOnlineError('');
-    try {
-      const result = await analyzePolicyWithGemini(policyInput, framework, apiKeyInput);
-      setOnlineResult(result);
-    } catch (err: any) {
-      console.error('Online escalation failed:', err);
-      setOnlineError(
-        err instanceof OnlineEngineError ? err.message : 'Something went wrong reaching the online model.'
-      );
-    } finally {
-      setOnlineLoading(false);
     }
   };
 
@@ -135,28 +83,6 @@ export default function ComplianceAuditor({ onUpdateScore }: ComplianceAuditorPr
           </select>
         </div>
 
-        {/* On-Device LLM Toggle */}
-        <div style={{ background: 'rgba(0, 240, 255, 0.03)', border: '1px solid rgba(0, 240, 255, 0.1)', padding: '12px', borderRadius: '4px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span className="tech-font" style={{ fontSize: '0.75rem', color: '#fff' }}>ON-DEVICE AI ANALYSIS</span>
-            <input 
-              type="checkbox" 
-              checked={useLocalLLM} 
-              onChange={(e) => setUseLocalLLM(e.target.checked)} 
-              style={{ cursor: 'pointer' }}
-            />
-          </div>
-          {useLocalLLM && (
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', display: 'block', marginTop: '6px' }}>
-              Runs a small language model directly in your browser (first run downloads the model, then it's cached).
-            </span>
-          )}
-          {loadStatus && (
-            <span style={{ fontSize: '0.65rem', color: 'var(--neon-cyan)', display: 'block', marginTop: '6px' }}>
-              {loadStatus.text} ({Math.round(loadStatus.progress * 100)}%)
-            </span>
-          )}
-        </div>
 
         {/* Policy Text Area */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -207,70 +133,6 @@ export default function ComplianceAuditor({ onUpdateScore }: ComplianceAuditorPr
         ) : (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-            {needsEscalation && (
-              <div style={{ border: '1px solid var(--neon-orange)', borderRadius: '4px', overflow: 'hidden' }}>
-                <div style={{ color: 'var(--neon-orange)', background: 'rgba(255, 159, 0, 0.05)', padding: '10px', fontSize: '0.75rem' }}>
-                  On-device model wasn't fully confident on this audit.
-                </div>
-
-                {!onlineResult && (
-                  <div style={{ padding: '12px', background: 'rgba(255, 159, 0, 0.02)' }}>
-                    {!showKeyInput ? (
-                      <button
-                        className="cyber-btn cyber-btn-secondary"
-                        style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                        onClick={() => setShowKeyInput(true)}
-                      >
-                        <Sparkles style={{ width: '14px', height: '14px' }} /> Get a second opinion (bring your own Gemini API key)
-                      </button>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                          Your key is used only for this request, sent directly to Google, never stored or sent anywhere else.
-                        </label>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <input
-                            type="password"
-                            placeholder="Paste your Gemini API key"
-                            value={apiKeyInput}
-                            onChange={(e) => setApiKeyInput(e.target.value)}
-                            className="cyber-input mono-font"
-                            style={{ flex: 1, fontSize: '0.75rem', background: '#050811', border: '1px solid var(--panel-border)', padding: '8px' }}
-                          />
-                          <button
-                            className="cyber-btn cyber-btn-success"
-                            style={{ fontSize: '0.7rem', whiteSpace: 'nowrap' }}
-                            onClick={handleEscalate}
-                            disabled={onlineLoading || !apiKeyInput.trim()}
-                          >
-                            {onlineLoading ? 'Analyzing...' : 'Analyze'}
-                          </button>
-                        </div>
-                        {onlineError && (
-                          <span style={{ fontSize: '0.7rem', color: 'var(--neon-red)' }}>{onlineError}</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {onlineResult && (
-              <div style={{ border: '1px solid var(--neon-cyan)', borderRadius: '4px', overflow: 'hidden' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--neon-cyan)', background: 'rgba(0, 240, 255, 0.05)', padding: '10px', fontSize: '0.75rem' }}>
-                  <Sparkles style={{ width: '14px', height: '14px' }} /> ONLINE MODEL SECOND OPINION (Gemini, your API key)
-                </div>
-                <div style={{ padding: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ display: 'flex', gap: '15px', fontSize: '0.8rem' }}>
-                    <strong>{onlineResult.status}</strong>
-                    <span>Score: {onlineResult.overallScore}%</span>
-                    <span>{onlineResult.gaps.length} gap(s) found</span>
-                  </div>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>{onlineResult.summary}</p>
-                </div>
-              </div>
-            )}
 
             {/* Score & Summary metrics */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '15px', background: 'rgba(0, 240, 255, 0.03)', border: '1px solid rgba(0, 240, 255, 0.1)', padding: '15px', borderRadius: '4px' }}>
