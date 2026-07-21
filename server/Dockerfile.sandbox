@@ -1,0 +1,20 @@
+FROM alpine:latest
+
+# Install basic networking and security tools for the sandbox
+RUN apk update && apk add --no-cache \
+    bash \
+    curl \
+    wget \
+    nmap \
+    netcat-openbsd \
+    bind-tools \
+    python3 \
+    py3-pip
+
+# Create a non-root user for executing payloads safely
+RUN adduser -D -s /bin/bash sandboxuser
+USER sandboxuser
+WORKDIR /home/sandboxuser
+
+# Set entrypoint to bash
+ENTRYPOINT ["/bin/bash"]

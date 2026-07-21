@@ -212,3 +212,85 @@ export async function analyzePolicyWithLLM(
     throw new Error("LLM returned non-JSON output, fall back to local engine");
   }
 }
+
+const RISK_SYSTEM_PROMPT = `You are a GRC risk assessment engine. You will be provided with a risk name, category, likelihood (1-5), and impact (1-5).
+Respond with ONLY a single JSON object (no markdown, no backticks, no preamble) matching exactly this shape:
+
+{
+  "steps": string[],
+  "cost": string,
+  "effort": "Low" | "Medium" | "High",
+  "residualScore": number,
+  "controls": string,
+  "needsEscalation": boolean
+}
+
+"steps" is an array of actionable mitigation steps.
+Set "needsEscalation" to true if you are not confident in the generated plan.`;
+
+export async function generateMitigationWithLLM(
+  riskName: string,
+  category: string,
+  likelihood: number,
+  impact: number,
+  onProgress?: (p: LoadProgress) => void
+): Promise<{ steps: string[]; cost: string; effort: string; residualScore: number; controls: string; needsEscalation: boolean }> {
+  const engine = await getEngine(onProgress);
+
+  const reply = await engine.chat.completions.create({
+    messages: [
+      { role: "system", content: RISK_SYSTEM_PROMPT },
+      { role: "user", content: `Risk Name: ${riskName}\nCategory: ${category}\nLikelihood: ${likelihood}\nImpact: ${impact}` },
+    ],
+    temperature: 0.2,
+  });
+
+  const raw = reply.choices[0]?.message?.content ?? "";
+  const cleaned = raw.replace(/```json|```/g, "").trim();
+
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    throw new Error("LLM returned non-JSON output, fall back to local engine");
+  }
+}
+
+const SANDBOX_SYSTEM_PROMPT = `You are a cybersecurity penetration testing reporter. You will be given a custom attack script and protocol.
+Respond with ONLY a single JSON object (no markdown, no backticks, no preamble) matching exactly this shape:
+
+{
+  "whatWasRun": string,
+  "whatItUncovered": string,
+  "complianceImpact": string,
+  "remediation": string,
+  "needsEscalation": boolean
+}
+
+Provide a plain english summary of what the script attempts to do.
+Set "needsEscalation" to true if the script intent is highly ambiguous or outside typical threat models.`;
+
+export async function simulateAttackWithLLM(
+  attackName: string,
+  protocol: string,
+  scriptCommands: string,
+  onProgress?: (p: LoadProgress) => void
+): Promise<{ whatWasRun: string; whatItUncovered: string; complianceImpact: string; remediation: string; needsEscalation: boolean }> {
+  const engine = await getEngine(onProgress);
+
+  const reply = await engine.chat.completions.create({
+    messages: [
+      { role: "system", content: SANDBOX_SYSTEM_PROMPT },
+      { role: "user", content: `Attack Name: ${attackName}\nProtocol: ${protocol}\nScript:\n${scriptCommands}` },
+    ],
+    temperature: 0.2,
+  });
+
+  const raw = reply.choices[0]?.message?.content ?? "";
+  const cleaned = raw.replace(/```json|```/g, "").trim();
+
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    throw new Error("LLM returned non-JSON output, fall back to local engine");
+  }
+}

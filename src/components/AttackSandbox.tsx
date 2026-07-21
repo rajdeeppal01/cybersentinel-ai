@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { SecurityEvent } from '../utils/aiEngine';
-import { Terminal, Play, RefreshCw, Cpu, Layers, ShieldAlert } from 'lucide-react';
+import { Terminal, Play, RefreshCw, Cpu, Layers, ShieldAlert, AlertCircle } from 'lucide-react';
 import { simulateAttackWithBackend } from '../utils/onlineEngine';
+import { simulateAttackWithLLM, LoadProgress } from '../utils/webllmEngine';
+import NetworkVisualizer from './NetworkVisualizer';
+import InteractiveTerminal from './InteractiveTerminal';
 
 interface AttackSandboxProps {
   onTriggerAlert: (alert: SecurityEvent) => void;
@@ -149,7 +152,7 @@ export default function AttackSandbox({ onTriggerAlert }: AttackSandboxProps) {
   const consoleContainerRef = useRef<HTMLDivElement>(null);
   
   // Custom Attack states
-  const [editorMode, setEditorMode] = useState<'presets' | 'custom'>('presets');
+  const [editorMode, setEditorMode] = useState<'presets' | 'custom' | 'interactive'>('presets');
   const [customName, setCustomName] = useState('Custom Intrusion Scan');
   const [customSeverity, setCustomSeverity] = useState<'low' | 'medium' | 'high' | 'critical'>('high');
   const [customProtocol, setCustomProtocol] = useState<'TCP' | 'UDP' | 'HTTP' | 'SSH' | 'DNS' | 'ICMP'>('TCP');
@@ -160,6 +163,10 @@ nmap -sS -p 22,80,443 localhost
 curl -X POST -d "user=admin&pass=root" http://localhost:3000/api/auth
 cat /etc/passwd`
   );
+
+  const [useLocalLLM, setUseLocalLLM] = useState(false);
+  const [loadStatus, setLoadStatus] = useState<LoadProgress | null>(null);
+  const [usedFallback, setUsedFallback] = useState(false);
 
   // Auto-scroll terminal container locally without shifting the window viewport
   useEffect(() => {
@@ -206,6 +213,8 @@ cat /etc/passwd`
 
   const handleLaunchCustomAttack = async () => {
     if (runningAttack) return;
+    setUsedFallback(false);
+    setLoadStatus(null);
     
     // Split the custom script by newline and filter empty lines
     const lines = customScript.split('\n').map(line => line.trim()).filter(line => line.length > 0);
@@ -222,7 +231,17 @@ cat /etc/passwd`
     let plainEnglishReport: any;
     try {
       setRunningAttack(customName); // Briefly show running state while fetching
-      plainEnglishReport = await simulateAttackWithBackend(customName, customProtocol, customScript);
+      if (useLocalLLM) {
+        try {
+          plainEnglishReport = await simulateAttackWithLLM(customName, customProtocol, customScript, (p) => setLoadStatus(p));
+        } catch (e) {
+          console.warn("WebLLM failed, falling back to backend", e);
+          setUsedFallback(true);
+          plainEnglishReport = await simulateAttackWithBackend(customName, customProtocol, customScript);
+        }
+      } else {
+        plainEnglishReport = await simulateAttackWithBackend(customName, customProtocol, customScript);
+      }
     } catch (err) {
       console.error("Backend failed, falling back to mock", err);
       plainEnglishReport = {
@@ -285,23 +304,20 @@ cat /etc/passwd`
           >
             PRESET VECTORS
           </button>
-          <button
-            style={{
-              flex: 1,
-              padding: '6px',
-              fontSize: '0.7rem',
-              background: editorMode === 'custom' ? 'rgba(0, 240, 255, 0.1)' : 'none',
-              border: 'none',
-              color: editorMode === 'custom' ? '#00f2fe' : 'var(--text-muted)',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              borderRadius: '3px',
-              transition: 'all 0.3s'
-            }}
-            onClick={() => setEditorMode('custom')}
-          >
-            CUSTOM BUILDER
-          </button>
+          <button 
+              className={editorMode === 'custom' ? 'cyber-tab active' : 'cyber-tab'}
+              onClick={() => setEditorMode('custom')}
+              style={{ flex: 1, padding: '8px 0', border: 'none', background: 'transparent', color: editorMode === 'custom' ? 'var(--neon-cyan)' : 'var(--text-muted)', borderBottom: editorMode === 'custom' ? '2px solid var(--neon-cyan)' : '2px solid transparent', cursor: 'pointer', fontSize: '0.75rem', transition: 'all 0.2s' }}
+            >
+              Custom Payload
+            </button>
+            <button 
+              className={editorMode === 'interactive' ? 'cyber-tab active' : 'cyber-tab'}
+              onClick={() => setEditorMode('interactive')}
+              style={{ flex: 1, padding: '8px 0', border: 'none', background: 'transparent', color: editorMode === 'interactive' ? 'var(--neon-cyan)' : 'var(--text-muted)', borderBottom: editorMode === 'interactive' ? '2px solid var(--neon-cyan)' : '2px solid transparent', cursor: 'pointer', fontSize: '0.75rem', transition: 'all 0.2s' }}
+            >
+              Live PTY
+            </button>
         </div>
 
         {editorMode === 'presets' ? (
@@ -353,7 +369,7 @@ cat /etc/passwd`
               </div>
             ))}
           </div>
-        ) : (
+        ) : editorMode === 'custom' ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
             <div style={{ display: 'flex', gap: '8px' }}>
               <div style={{ flex: 1 }}>
@@ -410,6 +426,27 @@ cat /etc/passwd`
               />
             </div>
 
+            {/* Local AI Toggle */}
+            <div style={{ background: 'rgba(0, 240, 255, 0.05)', border: '1px solid var(--neon-cyan)', padding: '12px', borderRadius: '4px', marginTop: '10px' }}>
+              <h4 className="tech-font" style={{ fontSize: '0.8rem', color: 'var(--neon-cyan)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <Cpu style={{ width: '14px', height: '14px' }} /> LOCAL AI ENGINE (WebLLM)
+              </h4>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.75rem', cursor: 'pointer' }}>
+                <input 
+                  type="checkbox" 
+                  checked={useLocalLLM}
+                  onChange={(e) => setUseLocalLLM(e.target.checked)}
+                  style={{ accentColor: 'var(--neon-cyan)', width: '16px', height: '16px' }}
+                />
+                <span style={{ color: useLocalLLM ? 'var(--neon-cyan)' : 'var(--text-primary)' }}>Enable On-Device WebLLM Analysis</span>
+              </label>
+              {loadStatus && (
+                <div style={{ fontSize: '0.7rem', color: 'var(--neon-cyan)', marginTop: '8px' }}>
+                  {loadStatus.text}
+                </div>
+              )}
+            </div>
+
             <button 
               className="cyber-btn cyber-btn-primary"
               style={{ width: '100%', padding: '8px', fontSize: '0.75rem', marginTop: '5px' }}
@@ -418,6 +455,22 @@ cat /etc/passwd`
             >
               <Play style={{ width: '12px', height: '12px' }} /> Fire Custom Script Payload
             </button>
+          </div>
+        ) : (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', lineHeight: '1.4' }}>
+              Connect directly to the isolated backend Sandbox Container. This provides a raw PTY session into the Docker environment.
+            </div>
+            
+            <div style={{ padding: '10px', background: 'rgba(0, 240, 255, 0.05)', border: '1px solid rgba(0, 240, 255, 0.2)', borderRadius: '4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px' }}>
+                <Terminal style={{ color: 'var(--neon-cyan)', width: '16px', height: '16px' }} />
+                <span style={{ color: '#fff', fontSize: '0.8rem', fontWeight: 'bold' }}>Sandbox Status: Active</span>
+              </div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.7rem' }}>
+                Type commands in the terminal window on the right to interact with the container.
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -444,37 +497,50 @@ cat /etc/passwd`
           </div>
         </div>
 
-        {/* Console output display */}
+        {/* Network Visualizer Map */}
+        <div style={{ flex: 1, borderBottom: '1px solid rgba(0, 240, 255, 0.15)', position: 'relative' }}>
+          <NetworkVisualizer 
+            sourceIp={runningAttack ? "185.220.101.4" : undefined}
+            destIp={runningAttack ? "10.0.0.12" : undefined}
+            isAttacking={!!runningAttack}
+          />
+        </div>
+
+        {/* Terminal Content Box */}
         <div 
           ref={consoleContainerRef}
           className="mono-font"
           style={{ 
             flex: 1, 
-            padding: '15px', 
-            overflowY: 'auto', 
-            fontSize: '0.7rem', 
-            color: 'var(--neon-cyan)', 
+            overflowY: editorMode === 'interactive' ? 'hidden' : 'auto', 
+            padding: editorMode === 'interactive' ? '0' : '15px',
+            fontSize: '0.75rem',
             lineHeight: '1.5',
-            whiteSpace: 'pre-wrap',
+            display: 'flex',
+            flexDirection: 'column',
             background: 'linear-gradient(180deg, #03050b 0%, #050811 100%)'
           }}
         >
-          {consoleLogs.map((log, index) => {
-            let color = 'var(--neon-cyan)';
-            if (log.startsWith('[ATTACK')) color = 'var(--neon-orange)';
-            else if (log.includes('[ALERT') || log.includes('[SEVERE')) color = 'var(--neon-red)';
-            else if (log.includes('[GRC')) color = 'var(--neon-purple)';
-            else if (log.includes('[TRY')) color = 'var(--text-muted)';
-            else if (log.includes('>> PAYLOAD')) color = '#fff';
+          {editorMode === 'interactive' ? (
+            <InteractiveTerminal />
+          ) : (
+            consoleLogs.map((log, index) => {
+              let color = 'var(--neon-cyan)';
+              if (log.startsWith('[ATTACK')) color = 'var(--neon-orange)';
+              else if (log.includes('[ALERT') || log.includes('[SEVERE')) color = 'var(--neon-red)';
+              else if (log.includes('[GRC')) color = 'var(--neon-purple)';
+              else if (log.includes('[TRY')) color = 'var(--text-muted)';
+              else if (log.includes('>> PAYLOAD')) color = '#fff';
 
-            return (
-              <div key={index} style={{ color, marginBottom: '4px' }}>
-                {log}
-              </div>
-            );
-          })}
+              return (
+                <div key={index} style={{ color, marginBottom: '4px' }}>
+                  {log}
+                </div>
+              );
+            })
+          )}
           
-          {runningAttack && (
+          {runningAttack && editorMode !== 'interactive' && (
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', marginTop: '10px' }}>
               <Cpu style={{ animation: 'spin 1.5s linear infinite', width: '12px', height: '12px' }} />
               <span className="tech-font" style={{ fontSize: '0.65rem', animation: 'pulse-cyan 1s infinite' }}>SIMULATING THREAT EXECUTION...</span>
@@ -488,6 +554,16 @@ cat /etc/passwd`
           <h3 className="tech-font" style={{ fontSize: '1rem', color: 'var(--neon-red)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
             <ShieldAlert style={{ width: '18px', height: '18px' }} /> AI POST-INCIDENT FORENSIC REPORT
           </h3>
+
+          {usedFallback && (
+            <div style={{ border: '1px solid var(--neon-orange)', color: 'var(--neon-orange)', background: 'rgba(255, 159, 0, 0.05)', padding: '10px', borderRadius: '4px', fontSize: '0.75rem', display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '5px' }}>
+              <AlertCircle style={{ width: '16px', height: '16px', flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <strong style={{ display: 'block', marginBottom: '4px' }}>⚠️ Note: The local on-device AI failed.</strong>
+                This forensic report was generated dynamically by the secure Vercel Python fallback backend instead of your local browser.
+              </div>
+            </div>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '20px' }}>
             <div style={{ gridColumn: 'span 6', display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>

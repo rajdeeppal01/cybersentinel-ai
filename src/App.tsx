@@ -6,7 +6,7 @@ import ComplianceAuditor from './components/ComplianceAuditor';
 import RiskRegister from './components/RiskRegister';
 import PhishingGuard from './components/PhishingGuard';
 import AttackSandbox from './components/AttackSandbox';
-import { Shield, ShieldAlert, Terminal, Layers, Activity, FileText, CheckSquare, Mail } from 'lucide-react';
+import { Shield, Terminal, Layers, Activity, FileText, Mail, FileCheck } from 'lucide-react';
 
 const INITIAL_ALERTS: SecurityEvent[] = [
   {
@@ -53,6 +53,8 @@ export default function App() {
     'HIPAA': 30
   });
 
+  const role = 'ADMIN';
+
   useEffect(() => {
     localStorage.setItem('cs_view', view);
   }, [view]);
@@ -92,6 +94,8 @@ export default function App() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  // Login bypassed per user request
 
   return (
     <div style={{ minHeight: '100vh', position: 'relative', overflowX: 'hidden', background: '#030408' }}>
@@ -253,25 +257,20 @@ export default function App() {
                 onClick={() => setActiveTab('grc')}
               >
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <CheckSquare style={{ width: '14px', height: '14px' }} /> GRC Auditor
+                  <FileCheck style={{ width: '14px', height: '14px' }} /> GRC Auditor
                 </span>
               </button>
-              <button 
-                className={`cyber-tab ${activeTab === 'risks' ? 'active' : ''}`}
-                onClick={() => setActiveTab('risks')}
-              >
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <ShieldAlert style={{ width: '14px', height: '14px' }} /> Risk Ledger
-                </span>
-              </button>
-              <button 
-                className={`cyber-tab ${activeTab === 'sandbox' ? 'active' : ''}`}
-                onClick={() => setActiveTab('sandbox')}
-              >
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Terminal style={{ width: '14px', height: '14px' }} /> Sandbox
-                </span>
-              </button>
+              
+              {role === 'ADMIN' && (
+                <button 
+                  className={`cyber-tab ${activeTab === 'sandbox' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('sandbox')}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Terminal style={{ width: '14px', height: '14px' }} /> Attack Sandbox
+                  </span>
+                </button>
+              )}
             </nav>
 
             {/* Live HUD Clocks and Status */}

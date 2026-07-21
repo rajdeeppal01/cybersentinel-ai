@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Shield, ShieldAlert, Sparkles, X, Plus, LayoutGrid, Loader2 } from 'lucide-react';
+import { Shield, ShieldAlert, Sparkles, X, Plus, LayoutGrid, Loader2, Cpu, AlertCircle } from 'lucide-react';
 import { generateMitigationWithBackend } from '../utils/onlineEngine';
+import { generateMitigationWithLLM, LoadProgress } from '../utils/webllmEngine';
 
 interface RiskItem {
   id: string;
@@ -113,6 +114,9 @@ export default function RiskRegister() {
   const [newLikelihood, setNewLikelihood] = useState(3);
   const [newImpact, setNewImpact] = useState(3);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [useLocalLLM, setUseLocalLLM] = useState(false);
+  const [loadStatus, setLoadStatus] = useState<LoadProgress | null>(null);
+  const [usedFallback, setUsedFallback] = useState(false);
 
   const handleMitigate = (id: string) => {
     setRisks(prev => prev.map(risk => {
@@ -139,11 +143,24 @@ export default function RiskRegister() {
     if (!newName || isSubmitting) return;
 
     setIsSubmitting(true);
+    setUsedFallback(false);
+    setLoadStatus(null);
     const likelihood = Number(newLikelihood);
     const impact = Number(newImpact);
 
     try {
-      const mitigationPlan = await generateMitigationWithBackend(newName, newCategory, likelihood, impact);
+      let mitigationPlan;
+      if (useLocalLLM) {
+        try {
+          mitigationPlan = await generateMitigationWithLLM(newName, newCategory, likelihood, impact, (p) => setLoadStatus(p));
+        } catch (e) {
+          console.warn("WebLLM failed, falling back to backend", e);
+          setUsedFallback(true);
+          mitigationPlan = await generateMitigationWithBackend(newName, newCategory, likelihood, impact);
+        }
+      } else {
+        mitigationPlan = await generateMitigationWithBackend(newName, newCategory, likelihood, impact);
+      }
       
       const newRisk: RiskItem = {
         id: `RSK-0${risks.length + 1}`,
@@ -285,10 +302,42 @@ export default function RiskRegister() {
           </button>
         </div>
 
+        {usedFallback && (
+          <div style={{ border: '1px solid var(--neon-orange)', color: 'var(--neon-orange)', background: 'rgba(255, 159, 0, 0.05)', padding: '10px', borderRadius: '4px', fontSize: '0.75rem', display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '15px' }}>
+            <AlertCircle style={{ width: '16px', height: '16px', flexShrink: 0, marginTop: '2px' }} />
+            <div>
+              <strong style={{ display: 'block', marginBottom: '4px' }}>⚠️ Note: The local on-device AI failed.</strong>
+              The risk mitigation plan was generated dynamically by the secure Vercel Python fallback backend instead of your local browser.
+            </div>
+          </div>
+        )}
+
         {/* Add Risk form Overlay */}
         {showAddForm && (
           <form onSubmit={handleAddRisk} style={{ background: 'rgba(7, 9, 21, 0.85)', border: '1px solid rgba(0,242,254,0.2)', padding: '20px', borderRadius: '14px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <h4 className="tech-font" style={{ fontSize: '0.8rem', color: '#fff', fontWeight: 'bold' }}>REGISTER COMPLIANCE RISK</h4>
+            
+            {/* Local AI Toggle */}
+            <div style={{ background: 'rgba(0, 240, 255, 0.05)', border: '1px solid var(--neon-cyan)', padding: '12px', borderRadius: '4px' }}>
+              <h4 className="tech-font" style={{ fontSize: '0.8rem', color: 'var(--neon-cyan)', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <Cpu style={{ width: '14px', height: '14px' }} /> LOCAL AI ENGINE (WebLLM)
+              </h4>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.75rem', cursor: 'pointer' }}>
+                <input 
+                  type="checkbox" 
+                  checked={useLocalLLM}
+                  onChange={(e) => setUseLocalLLM(e.target.checked)}
+                  style={{ accentColor: 'var(--neon-cyan)', width: '16px', height: '16px' }}
+                />
+                <span style={{ color: useLocalLLM ? 'var(--neon-cyan)' : 'var(--text-primary)' }}>Enable On-Device WebLLM Plan Generation</span>
+              </label>
+              {loadStatus && (
+                <div style={{ fontSize: '0.7rem', color: 'var(--neon-cyan)', marginTop: '8px' }}>
+                  {loadStatus.text}
+                </div>
+              )}
+            </div>
+
             <div style={{ display: 'flex', gap: '10px' }}>
               <input 
                 type="text"
