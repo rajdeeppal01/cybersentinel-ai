@@ -1,17 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import { Activity, Pause, Play } from 'lucide-react';
 
-interface SiemLog {
+export interface NetworkLog {
   id: string;
   timestamp: string;
   source: string;
   event: string;
-  severity: 'info' | 'warning' | 'critical';
+  severity: string;
   details: string;
+  lat?: number;
+  lng?: number;
 }
 
 export default function LiveSiemStream() {
-  const [logs, setLogs] = useState<SiemLog[]>([]);
+  const [logs, setLogs] = useState<NetworkLog[]>([]);
   const [isPaused, setIsPaused] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -19,7 +21,12 @@ export default function LiveSiemStream() {
     if (isPaused) return;
 
     // Connect to WebSocket SIEM feed
-    const ws = new WebSocket('ws://localhost:4000/siem');
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = process.env.NODE_ENV === 'production' 
+      ? `${protocol}//${window.location.host}/siem`
+      : 'ws://localhost:4000/siem';
+      
+    const ws = new WebSocket(wsUrl);
 
     ws.onmessage = (event) => {
       try {

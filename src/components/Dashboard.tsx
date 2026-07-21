@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { SecurityEvent } from '../utils/aiEngine';
 import { Activity, Globe, ShieldAlert, Cpu, CheckCircle } from 'lucide-react';
+import { ThreatMap } from './ThreatMap';
 
 interface DashboardProps {
   alerts: SecurityEvent[];
@@ -246,72 +247,9 @@ export default function Dashboard({ alerts, onAnalyze, setActiveTab, complianceS
           <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Tap any system node to inspect live logs</span>
         </div>
         
-        {/* SVG Intranet Map Vector Representation */}
-        <div style={{ flex: 1, position: 'relative', background: 'radial-gradient(circle at center, #0e122a 0%, #06070f 100%)', borderRadius: '20px', border: '1.5px solid rgba(255, 255, 255, 0.05)', overflow: 'hidden' }}>
-          <svg viewBox="0 0 800 280" style={{ width: '100%', height: '100%' }}>
-            <defs>
-              <pattern id="map-grid" width="24" height="24" patternUnits="userSpaceOnUse">
-                <circle cx="2" cy="2" r="1.2" fill="rgba(255, 255, 255, 0.05)" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#map-grid)" />
-
-            {/* Topology connections */}
-            <path d="M 150,140 L 300,140" fill="none" stroke="url(#line-cyan-grad)" strokeWidth="2.5" className="map-link-dash" />
-            <path d="M 300,140 L 450,140" fill="none" stroke="url(#line-cyan-grad)" strokeWidth="2.5" className="map-link-dash" />
-            <path d="M 450,140 Q 525,110 600,80" fill="none" stroke="url(#line-orange-grad)" strokeWidth="2.0" className="map-link-dash" />
-            <path d="M 450,140 Q 525,170 600,200" fill="none" stroke="url(#line-red-grad)" strokeWidth="2.5" className="map-link-dash" />
-
-            <defs>
-              <linearGradient id="line-red-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#ff0844" stopOpacity="0.8" />
-                <stop offset="100%" stopColor="#ffb199" stopOpacity="0.2" />
-              </linearGradient>
-              <linearGradient id="line-orange-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#fda085" stopOpacity="0.7" />
-                <stop offset="100%" stopColor="#00f2fe" stopOpacity="0.3" />
-              </linearGradient>
-              <linearGradient id="line-cyan-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#00f2fe" stopOpacity="0.8" />
-                <stop offset="100%" stopColor="#b18efd" stopOpacity="0.2" />
-              </linearGradient>
-            </defs>
-
-            {/* LOCAL_HOST */}
-            <g style={{ cursor: 'pointer' }} onClick={() => setSelectedNode('LOCAL_HOST')}>
-              <circle cx="150" cy="140" r="8" fill={selectedNode === 'LOCAL_HOST' ? '#00f2fe' : '#4facfe'} opacity="0.3" />
-              <circle cx="150" cy="140" r="5" fill="#00f2fe" />
-              <text x="120" y="165" fill="#cbd5e1" fontSize="9" fontWeight="800" className="tech-font">LOCAL_HOST</text>
-            </g>
-
-            {/* MUMBAI_HQ */}
-            <g style={{ cursor: 'pointer' }} onClick={() => setSelectedNode('MUMBAI_HQ')}>
-              <circle cx="300" cy="140" r="8" fill={selectedNode === 'MUMBAI_HQ' ? '#00f2fe' : '#4facfe'} opacity="0.3" />
-              <circle cx="300" cy="140" r="5" fill="#4facfe" />
-              <text x="270" y="165" fill="#cbd5e1" fontSize="9" fontWeight="800" className="tech-font">MUMBAI_HQ</text>
-            </g>
-
-            {/* GATEWAY_MUM */}
-            <g style={{ cursor: 'pointer' }} onClick={() => setSelectedNode('GATEWAY_MUM')}>
-              <circle cx="450" cy="140" r="10" fill="#38f9d7" opacity="0.3" />
-              <circle cx="450" cy="140" r="6" fill="#38f9d7" />
-              <text x="415" y="165" fill="#ffffff" fontSize="9" fontWeight="800" className="tech-font">GATEWAY_MUM</text>
-            </g>
-
-            {/* WAN_LINK */}
-            <g style={{ cursor: 'pointer' }} onClick={() => setSelectedNode('WAN_LINK')}>
-              <circle cx="600" cy="80" r="8" fill={selectedNode === 'WAN_LINK' ? '#00f2fe' : '#4facfe'} opacity="0.3" />
-              <circle cx="600" cy="80" r="5" fill="#00f2fe" />
-              <text x="575" y="65" fill="#cbd5e1" fontSize="9" fontWeight="800" className="tech-font">WAN_LINK</text>
-            </g>
-
-            {/* THREAT_SRC */}
-            <g style={{ cursor: 'pointer' }} onClick={() => setSelectedNode('THREAT_SRC')}>
-              <circle cx="600" cy="200" r="14" fill="#ff0844" style={{ animation: 'pulse-ring 2.5s infinite' }} opacity="0.4" />
-              <circle cx="600" cy="200" r="6" fill="#ff0844" />
-              <text x="565" y="228" fill="#ff527b" fontSize="9" fontWeight="800" className="tech-font">THREAT_SRC</text>
-            </g>
-          </svg>
+        {/* React Leaflet Live Threat Map */}
+        <div style={{ flex: 1, position: 'relative', borderRadius: '20px', border: '1.5px solid rgba(255, 255, 255, 0.05)', overflow: 'hidden' }}>
+          <ThreatMap />
 
           {/* Interactive Bouncy Node Dialog overlay */}
           <div style={{ position: 'absolute', bottom: '15px', left: '15px', right: '15px', background: 'rgba(12, 16, 38, 0.85)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '14px', padding: '12px 18px', display: 'flex', alignItems: 'center', gap: '12px', transition: 'var(--spring-transition)' }}>

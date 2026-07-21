@@ -7,6 +7,11 @@ import os from 'os';
 import { prisma } from './db';
 import authRouter, { authenticateToken } from './auth';
 
+import { PromptTemplate } from '@langchain/core/prompts';
+import { StringOutputParser } from '@langchain/core/output_parsers';
+import { FakeListLLM } from '@langchain/core/utils/testing';
+import { ChatOpenAI } from '@langchain/openai';
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -67,13 +72,11 @@ const wss = new WebSocketServer({ noServer: true });
 
 // SIEM Mock Log Generator
 const SAMPLE_LOGS = [
-  { source: '10.0.0.12', event: 'Successful login', severity: 'info', details: 'User admin authenticated successfully via SSH.' },
-  { source: '192.168.1.45', event: 'Firewall block', severity: 'warning', details: 'Blocked incoming traffic on port 3389 (RDP).' },
-  { source: '10.0.0.8', event: 'Database query', severity: 'info', details: 'SELECT * FROM users WHERE active = 1' },
-  { source: '172.16.0.100', event: 'Malware signature detected', severity: 'critical', details: 'Signature match for WannaCry variant in payload.' },
-  { source: '10.0.0.12', event: 'Failed login', severity: 'warning', details: 'Failed SSH login attempt for root.' },
-  { source: '192.168.1.200', event: 'Large data transfer', severity: 'critical', details: 'Outbound transfer of 50GB detected on port 443.' },
-  { source: '10.0.0.5', event: 'Service started', severity: 'info', details: 'Nginx web server started successfully.' },
+  { event: 'Failed Login Attempt', source: '192.168.1.45', severity: 'LOW', details: 'Invalid credentials for admin', lat: 37.7749, lng: -122.4194 },
+  { event: 'Port Scan Detected', source: '10.0.0.5', severity: 'MEDIUM', details: 'Nmap scan on port 22, 80, 443', lat: 51.5074, lng: -0.1278 },
+  { event: 'Malware Signature Match', source: '172.16.0.23', severity: 'CRITICAL', details: 'WannaCry ransomware payload', lat: 55.7558, lng: 37.6173 },
+  { event: 'Unauthorized Access', source: '192.168.1.10', severity: 'HIGH', details: 'Access to restricted HR database', lat: -33.8688, lng: 151.2093 },
+  { event: 'Large data transfer', source: '10.0.0.12', severity: 'CRITICAL', details: '50GB transferred to external IP', lat: 35.6895, lng: 139.6917 }
 ];
 
 wss.on('connection', (ws: WebSocket, req) => {
@@ -89,27 +92,46 @@ wss.on('connection', (ws: WebSocket, req) => {
         ...randomLog
       };
       
-      // Autonomous SOC Agent Triage Logic
+      // Autonomous SOC Agent Triage Logic (LangChain Integrated)
       const autoTriage = async (log: any) => {
-        const textLog = JSON.stringify(log);
-        if (textLog.includes('WannaCry') || textLog.includes('Large data transfer')) {
-          try {
+        try {
+          // Initialize a mock LLM for local dev without an API key
+          const llm = new FakeListLLM({
+            responses: [
+              `{"isThreat": ${log.severity === 'CRITICAL' ? 'true' : 'false'}, "confidence": 92.5, "mitreCode": "T1190", "mitreName": "Exploit Public-Facing Application", "reasoning": "Detected anomalous signature matching known CVE patterns."}`
+            ]
+          });
+
+          const prompt = PromptTemplate.fromTemplate(`
+            You are an autonomous AI SOC Agent. Analyze the following network log and determine if it represents a critical threat.
+            Return a JSON object with: isThreat (boolean), confidence (number 0-100), mitreCode (string), mitreName (string), reasoning (string).
+            Log Data: {logData}
+          `);
+
+          const chain = prompt.pipe(llm).pipe(new StringOutputParser());
+          const response = await chain.invoke({ logData: JSON.stringify(log) });
+          const analysis = JSON.parse(response);
+
+          if (analysis.isThreat) {
             await prisma.threatLog.create({
               data: {
                 sourceIp: log.source,
                 destIp: 'Internal Network',
                 severity: log.severity,
                 detectedThreat: log.event,
-                confidence: 95.5,
-                mitreCode: 'T1048',
-                mitreName: 'Exfiltration Over Alternative Protocol',
-                analysisSummary: `Autonomous Agent detected ${log.event}: ${log.details}`
+                confidence: analysis.confidence,
+                mitreCode: analysis.mitreCode,
+                mitreName: analysis.mitreName,
+                analysisSummary: analysis.reasoning
               }
             });
-            console.log(`[AUTONOMOUS AGENT] Critical threat triaged and logged to DB: ${log.event}`);
-          } catch (e) {
-            console.error('Failed to auto-triage threat', e);
+            console.log(`[LANGCHAIN AGENT] Critical threat triaged and logged to DB: ${log.event}`);
+            
+            // Mock Webhook Dispatch
+            console.log(`[WEBHOOK] Dispatched alert to Slack #incident-response for threat: ${log.event}`);
           }
+        } catch (e) {
+          console.error('[LANGCHAIN AGENT] Failed to analyze threat:', e);
         }
       };
 
