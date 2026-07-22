@@ -11,6 +11,10 @@ import { PromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import { FakeListChatModel } from '@langchain/core/utils/testing';
 import { ChatOpenAI } from '@langchain/openai';
+import { z } from 'zod';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
 app.use(cors());
@@ -110,22 +114,28 @@ wss.on('connection', (ws: WebSocket, req) => {
       // Autonomous SOC Agent Triage Logic (LangChain Integrated)
       const autoTriage = async (log: any) => {
         try {
-          // Initialize a mock LLM for local dev without an API key
-          const llm = new FakeListChatModel({
-            responses: [
-              `{"isThreat": ${log.severity === 'CRITICAL' ? 'true' : 'false'}, "confidence": 92.5, "mitreCode": "T1190", "mitreName": "Exploit Public-Facing Application", "reasoning": "Detected anomalous signature matching known CVE patterns."}`
-            ]
+          const llm = new ChatOpenAI({
+            modelName: 'gpt-4o-mini',
+            temperature: 0.2
+          });
+
+          const schema = z.object({
+            isThreat: z.boolean().describe("Whether the log represents a critical threat."),
+            confidence: z.number().min(0).max(100).describe("Confidence score from 0 to 100."),
+            mitreCode: z.string().describe("The MITRE ATT&CK technique code (e.g., T1190)."),
+            mitreName: z.string().describe("The name of the MITRE ATT&CK technique."),
+            reasoning: z.string().describe("A concise explanation of why this log was flagged.")
           });
 
           const prompt = PromptTemplate.fromTemplate(`
             You are an autonomous AI SOC Agent. Analyze the following network log and determine if it represents a critical threat.
-            Return a JSON object with: isThreat (boolean), confidence (number 0-100), mitreCode (string), mitreName (string), reasoning (string).
             Log Data: {logData}
           `);
 
-          const chain = prompt.pipe(llm).pipe(new StringOutputParser());
-          const response = await chain.invoke({ logData: JSON.stringify(log) });
-          const analysis = JSON.parse(response);
+          const structuredLlm = llm.withStructuredOutput(schema);
+          const chain = prompt.pipe(structuredLlm);
+          
+          const analysis = await chain.invoke({ logData: JSON.stringify(log) });
 
           if (analysis.isThreat) {
             await prisma.threatLog.create({
