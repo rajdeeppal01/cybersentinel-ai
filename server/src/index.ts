@@ -9,7 +9,7 @@ import authRouter, { authenticateToken } from './auth';
 
 import { PromptTemplate } from '@langchain/core/prompts';
 import { StringOutputParser } from '@langchain/core/output_parsers';
-import { FakeListLLM } from '@langchain/core/utils/testing';
+import { FakeListChatModel } from '@langchain/core/utils/testing';
 import { ChatOpenAI } from '@langchain/openai';
 
 const app = express();
@@ -67,6 +67,21 @@ app.post('/api/logs', async (req, res) => {
   }
 });
 
+// PATCH /api/logs/:id
+app.patch('/api/logs/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, resolutionNotes } = req.body;
+    const updatedLog = await prisma.threatLog.update({
+      where: { id },
+      data: { status, resolutionNotes }
+    });
+    res.json(updatedLog);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update threat log' });
+  }
+});
+
 const server = http.createServer(app);
 const wss = new WebSocketServer({ noServer: true });
 
@@ -96,7 +111,7 @@ wss.on('connection', (ws: WebSocket, req) => {
       const autoTriage = async (log: any) => {
         try {
           // Initialize a mock LLM for local dev without an API key
-          const llm = new FakeListLLM({
+          const llm = new FakeListChatModel({
             responses: [
               `{"isThreat": ${log.severity === 'CRITICAL' ? 'true' : 'false'}, "confidence": 92.5, "mitreCode": "T1190", "mitreName": "Exploit Public-Facing Application", "reasoning": "Detected anomalous signature matching known CVE patterns."}`
             ]

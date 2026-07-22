@@ -6,7 +6,8 @@ import ComplianceAuditor from './components/ComplianceAuditor';
 import RiskRegister from './components/RiskRegister';
 import PhishingGuard from './components/PhishingGuard';
 import AttackSandbox from './components/AttackSandbox';
-import { Shield, Terminal, Layers, Activity, FileText, Mail, FileCheck } from 'lucide-react';
+import IncidentResponse from './components/IncidentResponse';
+import { Shield, Terminal, Layers, Activity, FileText, Mail, FileCheck, ShieldAlert } from 'lucide-react';
 
 const INITIAL_ALERTS: SecurityEvent[] = [
   {
@@ -253,6 +254,14 @@ export default function App() {
                 </span>
               </button>
               <button 
+                className={`cyber-tab ${activeTab === 'incidents' ? 'active' : ''}`}
+                onClick={() => setActiveTab('incidents')}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <ShieldAlert style={{ width: '14px', height: '14px' }} /> Incidents
+                </span>
+              </button>
+              <button 
                 className={`cyber-tab ${activeTab === 'grc' ? 'active' : ''}`}
                 onClick={() => setActiveTab('grc')}
               >
@@ -299,6 +308,10 @@ export default function App() {
 
             <div style={{ display: activeTab === 'phishing' ? 'block' : 'none' }}>
               <PhishingGuard />
+            </div>
+
+            <div style={{ display: activeTab === 'incidents' ? 'block' : 'none' }}>
+              <IncidentResponse />
             </div>
 
             <div style={{ display: activeTab === 'grc' ? 'block' : 'none' }}>

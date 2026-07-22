@@ -43,5 +43,7 @@ model ThreatLog {
   mitreCode        String
   mitreName        String
   analysisSummary  String
+  status           String   @default("OPEN")
+  resolutionNotes  String?
   createdAt        DateTime @default(now())
 }
