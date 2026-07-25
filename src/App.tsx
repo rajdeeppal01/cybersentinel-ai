@@ -52,10 +52,10 @@ export default function App() {
   const [currentTime, setCurrentTime] = useState<string>('');
   const [copied, setCopied] = useState(false);
   const [complianceScores, setComplianceScores] = useState<Record<string, number>>({
-    'SOC 2': 20,
-    'ISO 27001': 25,
-    'GDPR': 40,
-    'HIPAA': 30
+    'SOC 2': 0,
+    'ISO 27001': 0,
+    'GDPR': 0,
+    'HIPAA': 0
   });
 
   const role = 'ADMIN';
