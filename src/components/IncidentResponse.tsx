@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Activity, Search, ShieldAlert, CheckCircle, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Activity, ShieldAlert, CheckCircle, Clock } from 'lucide-react';
 
 interface ThreatLog {
   id: string;

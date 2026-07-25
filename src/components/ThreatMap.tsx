@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { NetworkLog } from './LiveSiemStream';
 
 // Fix Leaflet's default icon issue with React
+// @ts-ignore
 import icon from 'leaflet/dist/images/marker-icon.png';
+// @ts-ignore
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
 let DefaultIcon = L.icon({
@@ -38,21 +40,15 @@ const createPulseIcon = (severity: string) => {
   });
 };
 
-// Component to dynamically re-center map if needed
-const MapController = ({ center }: { center: [number, number] }) => {
-  const map = useMap();
-  useEffect(() => {
-    map.flyTo(center, map.getZoom());
-  }, [center, map]);
-  return null;
-};
+
 
 export const ThreatMap: React.FC = () => {
   const [logs, setLogs] = useState<NetworkLog[]>([]);
 
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = process.env.NODE_ENV === 'production' 
+    // @ts-ignore
+    const wsUrl = import.meta.env.MODE === 'production' 
       ? `${protocol}//${window.location.host}/siem`
       : 'ws://localhost:4000/siem';
       

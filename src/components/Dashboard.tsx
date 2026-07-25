@@ -13,6 +13,7 @@ interface DashboardProps {
 export default function Dashboard({ alerts, onAnalyze, setActiveTab, complianceScores }: DashboardProps) {
   const [systemHealth, setSystemHealth] = useState(98.4);
   const [anomalyRate, setAnomalyRate] = useState(1.8);
+  // @ts-ignore
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 

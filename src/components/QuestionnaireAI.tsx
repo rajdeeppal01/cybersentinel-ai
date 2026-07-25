@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { HelpCircle, Send, Cpu, CheckCircle2, ShieldCheck, Database, FileText } from 'lucide-react';
 
 const MOCK_POLICIES = [

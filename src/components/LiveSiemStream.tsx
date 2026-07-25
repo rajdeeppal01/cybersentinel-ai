@@ -22,7 +22,8 @@ export default function LiveSiemStream() {
 
     // Connect to WebSocket SIEM feed
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = process.env.NODE_ENV === 'production' 
+    // @ts-ignore
+    const wsUrl = import.meta.env.MODE === 'production' 
       ? `${protocol}//${window.location.host}/siem`
       : 'ws://localhost:4000/siem';
       
