@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { SecurityEvent } from '../utils/aiEngine';
-import { Activity, Globe, ShieldAlert, Cpu, CheckCircle } from 'lucide-react';
-import { ThreatMap } from './ThreatMap';
+import { Activity, ShieldAlert, Cpu, CheckCircle, Terminal } from 'lucide-react';
 
 interface DashboardProps {
   alerts: SecurityEvent[];
@@ -13,8 +12,7 @@ interface DashboardProps {
 export default function Dashboard({ alerts, onAnalyze, setActiveTab, complianceScores }: DashboardProps) {
   const [systemHealth, setSystemHealth] = useState(98.4);
   const [anomalyRate, setAnomalyRate] = useState(1.8);
-  // @ts-ignore
-  const [selectedNode, setSelectedNode] = useState<string | null>(null);
+
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   // Dynamic status oscillation
@@ -67,7 +65,7 @@ export default function Dashboard({ alerts, onAnalyze, setActiveTab, complianceS
       label: 'SANDBOX', 
       desc: 'Simulating payload exploits in secure container sandbox', 
       grad: 'var(--grad-green)',
-      icon: <Globe style={{ width: '22px', height: '22px', color: '#06070d' }} />,
+      icon: <Terminal style={{ width: '22px', height: '22px', color: '#06070d' }} />,
       tab: 'sandbox'
     }
   ];
@@ -87,14 +85,6 @@ export default function Dashboard({ alerts, onAnalyze, setActiveTab, complianceS
       transform: `translateX(${shiftAmount}px) scale(0.92)`,
       opacity: 0.55
     };
-  };
-
-  const nodeAlertDetails: Record<string, string> = {
-    'MUMBAI_HQ': 'Mumbai Workstation: Main local developer environment active on port 3000.',
-    'LOCAL_HOST': 'Localhost: Core dev server running Vite HMR telemetry.',
-    'GATEWAY_MUM': 'Gateway Router: Firewall monitoring active for local subnet 192.168.1.0/24.',
-    'WAN_LINK': 'WAN Uplink: Standard internet traffic. No external anomalies detected.',
-    'THREAT_SRC': 'Sandbox Source: Simulated attack vectors originating from containment container.'
   };
 
   const renderDial = (value: number, label: string, gradientId: string, color1: string, color2: string) => {
@@ -239,39 +229,18 @@ export default function Dashboard({ alerts, onAnalyze, setActiveTab, complianceS
         </div>
       </div>
 
-      {/* Global Threat Map Simulation */}
-      <div className="cyber-panel" style={{ gridColumn: 'span 8', height: '410px', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 className="tech-font" style={{ fontSize: '0.95rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Globe style={{ width: '18px', height: '18px', color: '#4facfe' }} /> LOCAL INTRANET TOPOLOGY (TAP NODES)
-          </h3>
-          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Tap any system node to inspect live logs</span>
-        </div>
-        
-        {/* React Leaflet Live Threat Map */}
-        <div style={{ flex: 1, position: 'relative', borderRadius: '20px', border: '1.5px solid rgba(255, 255, 255, 0.05)', overflow: 'hidden' }}>
-          <ThreatMap />
 
-          {/* Interactive Bouncy Node Dialog overlay */}
-          <div style={{ position: 'absolute', bottom: '15px', left: '15px', right: '15px', background: 'rgba(12, 16, 38, 0.85)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '14px', padding: '12px 18px', display: 'flex', alignItems: 'center', gap: '12px', transition: 'var(--spring-transition)' }}>
-            <span className={selectedNode === 'THREAT_SRC' ? 'pulse-dot-red' : 'pulse-dot-cyan'}></span>
-            <span style={{ fontSize: '0.8rem', color: '#fff', fontWeight: '700' }} className="tech-font">
-              {selectedNode ? `[${selectedNode}] - ${nodeAlertDetails[selectedNode]}` : '[SYSTEM STATUS] - Click on any topological node above to audit live network statistics.'}
-            </span>
-          </div>
-        </div>
-      </div>
 
       {/* GRC Compliance Radar Dials */}
-      <div className="cyber-panel" style={{ gridColumn: 'span 4', height: '410px', display: 'flex', flexDirection: 'column' }}>
+      <div className="cyber-panel" style={{ gridColumn: 'span 12', height: 'auto', display: 'flex', flexDirection: 'column' }}>
         <h3 className="tech-font" style={{ fontSize: '0.95rem', color: '#fff', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <CheckCircle style={{ width: '18px', height: '18px', color: '#38f9d7' }} /> COMPLIANCE COVERAGE
+          <CheckCircle style={{ width: '18px', height: '18px', color: '#38f9d7' }} /> COMPLIANCE COVERAGE OVERVIEW
         </h3>
         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '18px', lineHeight: '1.4' }}>
-          Interactive standards coverage mapped against live logs.
+          Interactive standards coverage mapped against live logs and environment topology.
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', flex: 1 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', flex: 1 }}>
           {renderDial(complianceScores['SOC 2'] ?? 20, 'SOC 2 Type II', 'cyanGrad', '#00f2fe', '#4facfe')}
           {renderDial(complianceScores['ISO 27001'] ?? 25, 'ISO 27001', 'orangeGrad', '#f6d365', '#fda085')}
           {renderDial(complianceScores['GDPR'] ?? 40, 'GDPR Audit', 'greenGrad', '#43e97b', '#38f9d7')}
