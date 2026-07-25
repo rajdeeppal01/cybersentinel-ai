@@ -322,9 +322,9 @@ export default function App() {
             </nav>
 
             {/* Live HUD Clocks and Status */}
-            <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexShrink: 0 }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: '0.7rem' }}>
-                <span className="tech-font" style={{ color: 'var(--neon-green)', fontWeight: 'bold', letterSpacing: '0.5px' }}>SYSTEM SHIELD ACTIVE</span>
+                <span className="tech-font" style={{ color: 'var(--neon-green)', fontWeight: 'bold', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>SYSTEM SHIELD ACTIVE</span>
                 <span className="mono-font" style={{ color: 'var(--text-muted)', marginTop: '2px' }}>{currentTime}</span>
               </div>
             </div>

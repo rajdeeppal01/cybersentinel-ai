@@ -165,6 +165,8 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 /* Tactile Navigation Pill Tabs */
@@ -174,7 +176,14 @@ body {
   padding: 4px;
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.05);
-  gap: 2px;
+  gap: 4px;
+  overflow-x: auto;
+  max-width: 60%;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.cyber-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .cyber-tab {
@@ -190,6 +199,8 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .cyber-tab:hover {
