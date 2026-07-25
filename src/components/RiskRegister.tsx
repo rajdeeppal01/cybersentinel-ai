@@ -240,10 +240,13 @@ export default function RiskRegister({ cloudResources = [] }: { cloudResources?:
 
       {/* Quantitative Metrics Row */}
       <div style={{ gridColumn: 'span 12', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px' }}>
-        <div className="cyber-panel" style={{ textAlign: 'center', padding: '15px' }}>
+        <div className="cyber-panel" style={{ textAlign: 'center', padding: '15px', position: 'relative' }}>
           <div className="tech-font" style={{ fontSize: '0.7rem', color: 'var(--neon-green)' }}>TOTAL ENTERPRISE ALE</div>
           <div className="tech-font" style={{ fontSize: '2rem', color: '#fff', marginTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <DollarSign size={28} /> {totalALE.toLocaleString()}
+          </div>
+          <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '8px', opacity: 0.8 }}>
+            * Simulated Base ALE (Replaces Monte Carlo for demo purposes)
           </div>
         </div>
         <div className="cyber-panel" style={{ textAlign: 'center', padding: '15px', border: cloudRiskALE > 0 ? '1px solid var(--neon-red)' : '' }}>

@@ -22,6 +22,11 @@ const MOCK_ACCESS_LIST: EmployeeAccess[] = [
 export default function AccessGovernance() {
   const [accessList, setAccessList] = useState<EmployeeAccess[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
+  
+  // UAR Paper Trail Modal State
+  const [showModal, setShowModal] = useState(false);
+  const [selectedAction, setSelectedAction] = useState<{ id: string, action: 'APPROVED' | 'REVOKED' } | null>(null);
+  const [justification, setJustification] = useState('');
 
   const syncDirectory = () => {
     setIsSyncing(true);
@@ -32,9 +37,18 @@ export default function AccessGovernance() {
   };
 
   const handleAction = (id: string, action: 'APPROVED' | 'REVOKED') => {
+    setSelectedAction({ id, action });
+    setShowModal(true);
+  };
+
+  const confirmAction = () => {
+    if (!selectedAction || !justification.trim()) return;
     setAccessList(prev => prev.map(user => 
-      user.id === id ? { ...user, status: action, lastReviewed: new Date().toISOString().split('T')[0] } : user
+      user.id === selectedAction.id ? { ...user, status: selectedAction.action, lastReviewed: new Date().toISOString().split('T')[0] } : user
     ));
+    setShowModal(false);
+    setSelectedAction(null);
+    setJustification('');
   };
 
   const pendingCount = accessList.filter(u => u.status === 'PENDING_REVIEW').length;
@@ -157,6 +171,43 @@ export default function AccessGovernance() {
           </tbody>
         </table>
       </div>
+
+      {/* Business Justification Modal */}
+      {showModal && selectedAction && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
+          <div className="cyber-panel" style={{ width: '500px', background: '#0a0a12', border: `1px solid ${selectedAction.action === 'APPROVED' ? 'var(--neon-green)' : 'var(--neon-red)'}` }}>
+            <h3 className="tech-font" style={{ color: selectedAction.action === 'APPROVED' ? 'var(--neon-green)' : 'var(--neon-red)', marginBottom: '15px' }}>
+              {selectedAction.action === 'APPROVED' ? 'APPROVE ACCESS' : 'REVOKE ACCESS'}
+            </h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '15px' }}>
+              For compliance purposes (SOC 2 / ISO 27001), you must provide a business justification for this action. This will be logged in the immutable audit trail.
+            </p>
+            <textarea
+              className="cyber-input"
+              style={{ width: '100%', height: '80px', marginBottom: '20px', resize: 'none' }}
+              placeholder="Enter business justification..."
+              value={justification}
+              onChange={(e) => setJustification(e.target.value)}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button 
+                className="cyber-btn cyber-btn-secondary" 
+                onClick={() => { setShowModal(false); setJustification(''); setSelectedAction(null); }}
+              >
+                CANCEL
+              </button>
+              <button 
+                className="cyber-btn"
+                style={{ background: selectedAction.action === 'APPROVED' ? 'var(--neon-green)' : 'var(--neon-red)', color: '#000', borderColor: 'transparent' }}
+                onClick={confirmAction}
+                disabled={!justification.trim()}
+              >
+                CONFIRM {selectedAction.action}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

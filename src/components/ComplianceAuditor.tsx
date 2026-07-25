@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { POLICY_SAMPLES, auditPolicyLocal, PolicyAuditResult } from '../utils/aiEngine';
 import { analyzePolicyWithLLM, LoadProgress } from '../utils/webllmEngine';
 import { analyzePolicyWithGemini, analyzePolicyWithBackend, OnlineEngineError } from '../utils/onlineEngine';
-import { ShieldCheck, ClipboardCheck, Sparkles, FileWarning, Eye, Cpu, Layers, Download } from 'lucide-react';
+import { ShieldCheck, ClipboardCheck, Sparkles, FileWarning, Eye, Cpu, Layers, Download, FileText } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
@@ -394,6 +394,19 @@ export default function ComplianceAuditor({ onUpdateScore }: ComplianceAuditorPr
                             {gap.suggestedWording}
                           </pre>
                         </div>
+                      </div>
+
+                      {/* Simulated Evidence Link */}
+                      <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <strong style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>ATTACHED EVIDENCE:</strong>
+                        <a 
+                          href="#" 
+                          onClick={(e) => { e.preventDefault(); alert('In a production environment, this would link directly to the internal Jira ticket, GitHub PR, or AWS Config snapshot that proves this control is enforced.'); }} 
+                          style={{ fontSize: '0.7rem', color: 'var(--neon-cyan)', textDecoration: 'underline', display: 'flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          <FileText style={{ width: '12px', height: '12px' }} />
+                          {gap.controlId.replace('.', '_')}_evidence_artifact.json
+                        </a>
                       </div>
                     </div>
                   </div>

@@ -8,7 +8,7 @@ export interface CloudResource {
   type: string;
   issue: string;
   severity: 'HIGH' | 'MEDIUM' | 'LOW';
-  status: 'OPEN' | 'REMEDIATED' | 'ACCEPTED_RISK';
+  status: 'OPEN' | 'REMEDIATED' | 'ACCEPTED_RISK' | 'TICKET_OPENED';
   mappedControl: string;
   justification?: string;
 }
@@ -105,7 +105,7 @@ export default function CloudPosture({ resources, onRemediate, onAcceptRisk, onS
         {[
           { label: 'TOTAL ASSETS MONITORED', value: resources.length > 0 ? '4,102' : '0' },
           { label: 'OPEN MISCONFIGURATIONS', value: resources.filter(r => r.status === 'OPEN').length },
-          { label: 'AUTO-REMEDIATED', value: resources.filter(r => r.status === 'REMEDIATED').length },
+          { label: 'AUTO-REMEDIATED', value: resources.filter(r => r.status === 'REMEDIATED' || r.status === 'TICKET_OPENED').length },
           { label: 'ACCEPTED RISKS', value: resources.filter(r => r.status === 'ACCEPTED_RISK').length }
         ].map((metric, i) => (
           <div key={i} className="cyber-panel" style={{ textAlign: 'center', padding: '15px' }}>
@@ -155,9 +155,11 @@ export default function CloudPosture({ resources, onRemediate, onAcceptRisk, onS
                   </div>
                 </td>
                 <td style={{ padding: '16px 12px' }}>
-                  <span className={`cyber-badge ${res.status === 'OPEN' ? 'cyber-badge-red' : res.status === 'ACCEPTED_RISK' ? 'cyber-badge-yellow' : 'cyber-badge-green'}`}>
-                    {res.status === 'OPEN' ? <ShieldAlert size={12} style={{ display: 'inline', marginRight: '4px' }}/> : <CheckCircle size={12} style={{ display: 'inline', marginRight: '4px' }}/>}
-                    {res.status === 'ACCEPTED_RISK' ? 'ACCEPTED' : res.status}
+                  <span className={`cyber-badge ${res.status === 'OPEN' ? 'cyber-badge-red' : res.status === 'ACCEPTED_RISK' || res.status === 'TICKET_OPENED' ? 'cyber-badge-yellow' : 'cyber-badge-green'}`}>
+                    {res.status === 'OPEN' && <><ShieldAlert size={12} style={{ display: 'inline', marginRight: '4px' }}/> OPEN</>}
+                    {res.status === 'REMEDIATED' && <><CheckCircle size={12} style={{ display: 'inline', marginRight: '4px' }}/> REMEDIATED</>}
+                    {res.status === 'TICKET_OPENED' && <><CheckCircle size={12} style={{ display: 'inline', marginRight: '4px' }}/> TICKET OPENED</>}
+                    {res.status === 'ACCEPTED_RISK' && <><ShieldAlert size={12} style={{ display: 'inline', marginRight: '4px' }}/> ACCEPTED</>}
                   </span>
                   {res.status === 'ACCEPTED_RISK' && res.justification && (
                     <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', maxWidth: '150px' }}>
@@ -173,7 +175,7 @@ export default function CloudPosture({ resources, onRemediate, onAcceptRisk, onS
                         style={{ padding: '4px 10px', fontSize: '0.7rem' }}
                         onClick={() => onRemediate(res.id)}
                       >
-                        Remediate
+                        Create ITSM Ticket
                       </button>
                       <button 
                         className="cyber-btn cyber-btn-secondary"

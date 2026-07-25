@@ -75,7 +75,7 @@ export default function App() {
 
   const handleCloudRemediate = (id: string) => {
     setCloudResources(prev => prev.map(res => 
-      res.id === id ? { ...res, status: 'REMEDIATED' } : res
+      res.id === id ? { ...res, status: 'TICKET_OPENED' } : res
     ));
   };
 
