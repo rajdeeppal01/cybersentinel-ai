@@ -7,6 +7,20 @@ interface NetworkVisualizerProps {
   isAttacking?: boolean;
 }
 
+interface GraphNode {
+  id: string;
+  label: string;
+  group: number;
+  color: string;
+  x?: number;
+  y?: number;
+}
+
+interface GraphLink {
+  source: string | GraphNode;
+  target: string | GraphNode;
+}
+
 export default function NetworkVisualizer({ sourceIp, destIp, isAttacking }: NetworkVisualizerProps) {
   const fgRef = useRef<any>();
   const [dimensions, setDimensions] = useState({ width: 400, height: 300 });
@@ -57,7 +71,7 @@ export default function NetworkVisualizer({ sourceIp, destIp, isAttacking }: Net
     return { nodes, links };
   }, [sourceIp, destIp]);
 
-  const drawNode = useCallback((node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+  const drawNode = useCallback((node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
     const label = node.label;
     const fontSize = 12 / globalScale;
     ctx.font = `${fontSize}px Sans-Serif`;
@@ -70,7 +84,7 @@ export default function NetworkVisualizer({ sourceIp, destIp, isAttacking }: Net
     }
 
     ctx.beginPath();
-    ctx.arc(node.x, node.y, 5, 0, 2 * Math.PI, false);
+    ctx.arc(node.x!, node.y!, 5, 0, 2 * Math.PI, false);
     ctx.fillStyle = node.color || '#00f2fe';
     
     // Highlight if attacking
@@ -87,28 +101,34 @@ export default function NetworkVisualizer({ sourceIp, destIp, isAttacking }: Net
     ctx.textBaseline = 'middle';
     ctx.fillStyle = '#ffffff';
     ctx.shadowBlur = 0; // reset for text
-    ctx.fillText(label, node.x, node.y + 10);
+    ctx.fillText(label, node.x!, node.y! + 10);
     ctx.font = `${fontSize * 0.7}px Sans-Serif`;
     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.fillText(node.id, node.x, node.y + 18);
+    ctx.fillText(node.id, node.x!, node.y! + 18);
   }, [sourceIp, destIp, isAttacking]);
 
-  const linkColor = useCallback((link: any) => {
-    if (isAttacking && link.source.id === sourceIp && link.target.id === destIp) {
+  const linkColor = useCallback((link: GraphLink) => {
+    const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+    const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+    if (isAttacking && sourceId === sourceIp && targetId === destIp) {
       return '#ff527b';
     }
     return 'rgba(255, 255, 255, 0.1)';
   }, [isAttacking, sourceIp, destIp]);
   
-  const linkWidth = useCallback((link: any) => {
-    if (isAttacking && link.source.id === sourceIp && link.target.id === destIp) {
+  const linkWidth = useCallback((link: GraphLink) => {
+    const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+    const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+    if (isAttacking && sourceId === sourceIp && targetId === destIp) {
       return 2;
     }
     return 1;
   }, [isAttacking, sourceIp, destIp]);
 
-  const linkDirectionalParticles = useCallback((link: any) => {
-    if (isAttacking && link.source.id === sourceIp && link.target.id === destIp) {
+  const linkDirectionalParticles = useCallback((link: GraphLink) => {
+    const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+    const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+    if (isAttacking && sourceId === sourceIp && targetId === destIp) {
       return 4;
     }
     return 0;

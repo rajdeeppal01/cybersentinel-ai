@@ -112,7 +112,6 @@ export default function App() {
     ));
   };
 
-  if (view === 'landing') { /* Login bypassed per user request */ }
 
   return (
     <div style={{ minHeight: '100vh', position: 'relative', overflowX: 'hidden', background: '#030408' }}>

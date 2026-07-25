@@ -45,7 +45,7 @@ export default function LiveSiemStream() {
     };
 
     ws.onclose = () => {
-      console.log('Disconnected from SIEM WS stream');
+
     };
 
     return () => {

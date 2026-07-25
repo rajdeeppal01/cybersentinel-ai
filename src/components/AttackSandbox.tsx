@@ -228,7 +228,7 @@ cat /etc/passwd`
     terminalLogs.push(`[ALERT] AI Endpoint Protection Agent intercepted custom command sequence!`);
     terminalLogs.push(`[GRC WARNING] Compliance risk flag triggered: NIST CSF PR.IP-4 / SOC 2 CC7.1`);
 
-    let plainEnglishReport: any;
+    let plainEnglishReport: string;
     try {
       setRunningAttack(customName); // Briefly show running state while fetching
       if (useLocalLLM) {
@@ -387,7 +387,7 @@ cat /etc/passwd`
                   className="cyber-input" 
                   style={{ fontSize: '0.75rem', padding: '5px', background: '#070b15', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', width: '80px', height: '28px' }}
                   value={customSeverity}
-                  onChange={(e: any) => setCustomSeverity(e.target.value)}
+                  onChange={(e) => setCustomSeverity(e.target.value as 'low' | 'medium' | 'high' | 'critical')}
                 >
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
@@ -404,7 +404,7 @@ cat /etc/passwd`
                   className="cyber-input" 
                   style={{ fontSize: '0.75rem', padding: '5px', background: '#070b15', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', width: '100%', height: '28px' }}
                   value={customProtocol}
-                  onChange={(e: any) => setCustomProtocol(e.target.value)}
+                  onChange={(e) => setCustomProtocol(e.target.value)}
                 >
                   <option value="TCP">TCP</option>
                   <option value="UDP">UDP</option>

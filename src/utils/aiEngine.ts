@@ -666,7 +666,7 @@ export async function analyzeWithGemini(apiKey: string, promptText: string, task
 
     const data = await response.json();
     return data.candidates?.[0]?.content?.parts?.[0]?.text || "No response received from Gemini.";
-  } catch (error: any) {
+  } catch (error: unknown) {
     throw new Error(`Gemini API Error: ${error.message}`);
   }
 }

@@ -107,7 +107,7 @@ export default function PhishingGuard() {
             const output = await analyzePhishingWithBackend(emailInput);
             setResult(output);
             setUsedFallback(true);
-          } catch (backendErr: any) {
+          } catch (backendErr: unknown) {
             console.error('Backend fallback also failed:', backendErr);
             setErrorMsg(`On-device model failed, AND server fallback also failed: ${backendErr?.message || String(backendErr)}`);
             setResult(analyzePhishingLocal(emailInput));
@@ -119,7 +119,7 @@ export default function PhishingGuard() {
         const output = await analyzePhishingWithBackend(emailInput);
         setResult(output);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setErrorMsg(err.message);
     } finally {
       setIsLoading(false);
@@ -132,7 +132,7 @@ export default function PhishingGuard() {
     try {
       const output = await analyzeEmailWithGemini(emailInput, apiKeyInput);
       setOnlineResult(output);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Online escalation failed:', err);
       setOnlineError(
         err instanceof OnlineEngineError ? err.message : 'Something went wrong reaching the online model.'

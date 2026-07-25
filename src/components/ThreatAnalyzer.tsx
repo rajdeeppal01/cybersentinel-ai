@@ -68,7 +68,7 @@ export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) 
           setAnalysisResult(result);
           setNeedsEscalation(result.needsEscalation);
           setCompletedSteps(new Array(result.incidentResponsePlaybook.length).fill(false));
-        } catch (e: any) {
+        } catch (e: unknown) {
           console.warn("WebLLM failed, falling back to local heuristic engine", e);
           setUsedFallback(true);
           const result = analyzeLogLocal(logInput);
@@ -80,7 +80,7 @@ export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) 
         setAnalysisResult(result);
         setCompletedSteps(new Array(result.incidentResponsePlaybook.length).fill(false));
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setErrorMsg(err.message);
     } finally {
       setIsLoading(false);
@@ -94,7 +94,7 @@ export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) 
     try {
       const result = await analyzeLogWithGemini(logInput); // Backend handles logic
       setOnlineResult(result);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Online escalation failed:', err);
       setOnlineError(
         err instanceof OnlineEngineError ? err.message : 'Something went wrong reaching the online model.'

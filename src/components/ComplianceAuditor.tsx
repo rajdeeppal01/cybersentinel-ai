@@ -82,7 +82,7 @@ export default function ComplianceAuditor({ onUpdateScore }: ComplianceAuditorPr
             setAuditResult(result);
             onUpdateScore(framework, result.overallScore);
             setUsedFallback(true);
-          } catch (backendErr: any) {
+          } catch (backendErr: unknown) {
             console.error('Backend fallback also failed:', backendErr);
             setErrorMsg(`On-device model failed, AND server fallback also failed: ${backendErr?.message || String(backendErr)}`);
             const fallback = auditPolicyLocal(policyInput, framework);
@@ -97,7 +97,7 @@ export default function ComplianceAuditor({ onUpdateScore }: ComplianceAuditorPr
         setAuditResult(result);
         onUpdateScore(framework, result.overallScore);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setErrorMsg(err.message);
     } finally {
       setIsLoading(false);
@@ -110,7 +110,7 @@ export default function ComplianceAuditor({ onUpdateScore }: ComplianceAuditorPr
     try {
       const result = await analyzePolicyWithGemini(policyInput, framework, apiKeyInput);
       setOnlineResult(result);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Online escalation failed:', err);
       setOnlineError(
         err instanceof OnlineEngineError ? err.message : 'Something went wrong reaching the online model.'

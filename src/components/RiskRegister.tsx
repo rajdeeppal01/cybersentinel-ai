@@ -389,7 +389,7 @@ export default function RiskRegister({ cloudResources = [] }: { cloudResources?:
                 className="cyber-select" 
                 style={{ fontSize: '0.75rem', flex: 1 }}
                 value={newCategory}
-                onChange={(e: any) => setNewCategory(e.target.value)}
+                onChange={(e) => setNewCategory(e.target.value as 'Infrastructure' | 'Software' | 'Process' | 'Compliance')}
               >
                 <option value="Infrastructure">Infrastructure</option>
                 <option value="Software">Software</option>
