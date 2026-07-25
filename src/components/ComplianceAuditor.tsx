@@ -84,7 +84,7 @@ export default function ComplianceAuditor({ onUpdateScore }: ComplianceAuditorPr
             setUsedFallback(true);
           } catch (backendErr: unknown) {
             console.error('Backend fallback also failed:', backendErr);
-            setErrorMsg(`On-device model failed, AND server fallback also failed: ${backendErr?.message || String(backendErr)}`);
+            setErrorMsg(`On-device model failed, AND server fallback also failed: ${(backendErr as Error)?.message || String(backendErr)}`);
             const fallback = auditPolicyLocal(policyInput, framework);
             setAuditResult(fallback);
             onUpdateScore(framework, fallback.overallScore);
@@ -98,7 +98,7 @@ export default function ComplianceAuditor({ onUpdateScore }: ComplianceAuditorPr
         onUpdateScore(framework, result.overallScore);
       }
     } catch (err: unknown) {
-      setErrorMsg(err.message);
+      setErrorMsg(err instanceof Error ? err.message : String(err));
     } finally {
       setIsLoading(false);
     }

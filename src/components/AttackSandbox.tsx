@@ -27,7 +27,8 @@ interface AttackTemplate {
     whatItUncovered: string;
     complianceImpact: string;
     remediation: string;
-  };
+    needsEscalation?: boolean;
+  } | string;
 }
 
 const ATTACK_TEMPLATES: AttackTemplate[] = [
@@ -228,7 +229,7 @@ cat /etc/passwd`
     terminalLogs.push(`[ALERT] AI Endpoint Protection Agent intercepted custom command sequence!`);
     terminalLogs.push(`[GRC WARNING] Compliance risk flag triggered: NIST CSF PR.IP-4 / SOC 2 CC7.1`);
 
-    let plainEnglishReport: string;
+    let plainEnglishReport: { whatWasRun: string; whatItUncovered: string; complianceImpact: string; remediation: string; needsEscalation?: boolean } | string;
     try {
       setRunningAttack(customName); // Briefly show running state while fetching
       if (useLocalLLM) {
@@ -404,7 +405,7 @@ cat /etc/passwd`
                   className="cyber-input" 
                   style={{ fontSize: '0.75rem', padding: '5px', background: '#070b15', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', width: '100%', height: '28px' }}
                   value={customProtocol}
-                  onChange={(e) => setCustomProtocol(e.target.value)}
+                  onChange={(e) => setCustomProtocol(e.target.value as "TCP" | "UDP" | "HTTP" | "SSH" | "DNS" | "ICMP")}
                 >
                   <option value="TCP">TCP</option>
                   <option value="UDP">UDP</option>
@@ -564,36 +565,42 @@ cat /etc/passwd`
               </div>
             </div>
           )}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '20px' }}>
-            <div style={{ gridColumn: 'span 6', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <strong style={{ fontSize: '0.75rem', color: 'var(--neon-orange)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>What was run:</strong>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-                  {completedReport.plainEnglishReport.whatWasRun}
-                </p>
+          {typeof completedReport.plainEnglishReport === 'string' ? (
+            <div style={{ padding: '10px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '4px', fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>
+              {completedReport.plainEnglishReport}
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '20px' }}>
+              <div style={{ gridColumn: 'span 6', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <strong style={{ fontSize: '0.75rem', color: 'var(--neon-orange)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>What was run:</strong>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                    {completedReport.plainEnglishReport.whatWasRun}
+                  </p>
+                </div>
+                <div>
+                  <strong style={{ fontSize: '0.75rem', color: 'var(--neon-cyan)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>What it uncovered:</strong>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                    {completedReport.plainEnglishReport.whatItUncovered}
+                  </p>
+                </div>
               </div>
-              <div>
-                <strong style={{ fontSize: '0.75rem', color: 'var(--neon-cyan)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>What it uncovered:</strong>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-                  {completedReport.plainEnglishReport.whatItUncovered}
-                </p>
+              <div style={{ gridColumn: 'span 6', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <strong style={{ fontSize: '0.75rem', color: 'var(--neon-purple)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>GRC & Compliance Impact:</strong>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                    {completedReport.plainEnglishReport.complianceImpact}
+                  </p>
+                </div>
+                <div>
+                  <strong style={{ fontSize: '0.75rem', color: 'var(--neon-green)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>Remediation Action Plan:</strong>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                    {completedReport.plainEnglishReport.remediation}
+                  </p>
+                </div>
               </div>
             </div>
-            <div style={{ gridColumn: 'span 6', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <strong style={{ fontSize: '0.75rem', color: 'var(--neon-purple)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>GRC & Compliance Impact:</strong>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-                  {completedReport.plainEnglishReport.complianceImpact}
-                </p>
-              </div>
-              <div>
-                <strong style={{ fontSize: '0.75rem', color: 'var(--neon-green)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>Remediation Action Plan:</strong>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-                  {completedReport.plainEnglishReport.remediation}
-                </p>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       )}
 

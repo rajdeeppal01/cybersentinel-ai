@@ -81,7 +81,7 @@ export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) 
         setCompletedSteps(new Array(result.incidentResponsePlaybook.length).fill(false));
       }
     } catch (err: unknown) {
-      setErrorMsg(err.message);
+      setErrorMsg(err instanceof Error ? err.message : String(err));
     } finally {
       setIsLoading(false);
       setLoadStatus(null);

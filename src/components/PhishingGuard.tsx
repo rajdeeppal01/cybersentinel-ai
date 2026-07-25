@@ -109,7 +109,7 @@ export default function PhishingGuard() {
             setUsedFallback(true);
           } catch (backendErr: unknown) {
             console.error('Backend fallback also failed:', backendErr);
-            setErrorMsg(`On-device model failed, AND server fallback also failed: ${backendErr?.message || String(backendErr)}`);
+            setErrorMsg(`On-device model failed, AND server fallback also failed: ${(backendErr as Error)?.message || String(backendErr)}`);
             setResult(analyzePhishingLocal(emailInput));
           }
         } finally {
@@ -120,7 +120,7 @@ export default function PhishingGuard() {
         setResult(output);
       }
     } catch (err: unknown) {
-      setErrorMsg(err.message);
+      setErrorMsg(err instanceof Error ? err.message : String(err));
     } finally {
       setIsLoading(false);
     }
