@@ -241,10 +241,10 @@ export default function Dashboard({ alerts, onAnalyze, setActiveTab, complianceS
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', flex: 1 }}>
-          {renderDial(complianceScores['SOC 2'] ?? 20, 'SOC 2 Type II', 'cyanGrad', '#00f2fe', '#4facfe')}
-          {renderDial(complianceScores['ISO 27001'] ?? 25, 'ISO 27001', 'orangeGrad', '#f6d365', '#fda085')}
-          {renderDial(complianceScores['GDPR'] ?? 40, 'GDPR Audit', 'greenGrad', '#43e97b', '#38f9d7')}
-          {renderDial(complianceScores['HIPAA'] ?? 30, 'HIPAA Compliance', 'purpleGrad', '#b18efd', '#f1a9ff')}
+          {renderDial(complianceScores['SOC 2'] ?? 0, 'SOC 2 Type II', 'cyanGrad', '#00f2fe', '#4facfe')}
+          {renderDial(complianceScores['ISO 27001'] ?? 0, 'ISO 27001', 'orangeGrad', '#f6d365', '#fda085')}
+          {renderDial(complianceScores['GDPR'] ?? 0, 'GDPR Audit', 'greenGrad', '#43e97b', '#38f9d7')}
+          {renderDial(complianceScores['HIPAA'] ?? 0, 'HIPAA Compliance', 'purpleGrad', '#b18efd', '#f1a9ff')}
         </div>
 
         <button 
