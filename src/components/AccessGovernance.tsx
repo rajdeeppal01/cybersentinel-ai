@@ -20,7 +20,16 @@ const MOCK_ACCESS_LIST: EmployeeAccess[] = [
 ];
 
 export default function AccessGovernance() {
-  const [accessList, setAccessList] = useState<EmployeeAccess[]>(MOCK_ACCESS_LIST);
+  const [accessList, setAccessList] = useState<EmployeeAccess[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const syncDirectory = () => {
+    setIsSyncing(true);
+    setTimeout(() => {
+      setIsSyncing(false);
+      setAccessList(MOCK_ACCESS_LIST);
+    }, 1500);
+  };
 
   const handleAction = (id: string, action: 'APPROVED' | 'REVOKED') => {
     setAccessList(prev => prev.map(user => 
@@ -43,6 +52,14 @@ export default function AccessGovernance() {
             Quarterly access attestation to enforce Least Privilege and maintain SOC 2 / ISO 27001 compliance.
           </p>
         </div>
+        <button 
+          className="cyber-btn"
+          style={{ padding: '8px 16px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+          onClick={syncDirectory}
+          disabled={isSyncing}
+        >
+          {isSyncing ? 'SYNCING DIRECTORY...' : 'SYNC DIRECTORY'}
+        </button>
       </div>
 
       <div style={{ gridColumn: 'span 12', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px' }}>
@@ -75,7 +92,13 @@ export default function AccessGovernance() {
             </tr>
           </thead>
           <tbody>
-            {accessList.map((user) => (
+            {accessList.length === 0 ? (
+              <tr>
+                <td colSpan={5} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
+                  No access records found. Sync directory to populate active grants.
+                </td>
+              </tr>
+            ) : accessList.map((user) => (
               <tr key={user.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s' }} className="hover:bg-[rgba(255,255,255,0.02)]">
                 <td style={{ padding: '16px 12px' }}>
                   <div style={{ color: '#fff', fontSize: '0.85rem', fontWeight: 'bold' }}>{user.name}</div>

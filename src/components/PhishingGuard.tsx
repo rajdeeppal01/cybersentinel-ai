@@ -52,7 +52,7 @@ HR Team`
 ];
 
 export default function PhishingGuard() {
-  const [emailInput, setEmailInput] = useState(PHISHING_SAMPLES[0].text);
+  const [emailInput, setEmailInput] = useState('');
   const [useLocalLLM, setUseLocalLLM] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadStatus, setLoadStatus] = useState<LoadProgress | null>(null);

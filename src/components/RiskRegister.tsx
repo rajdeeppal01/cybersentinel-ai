@@ -105,8 +105,17 @@ const INITIAL_RISKS: RiskItem[] = [
 ];
 
 export default function RiskRegister({ cloudResources = [] }: { cloudResources?: CloudResource[] }) {
-  const [risks, setRisks] = useState<RiskItem[]>(INITIAL_RISKS);
+  const [risks, setRisks] = useState<RiskItem[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [selectedRisk, setSelectedRisk] = useState<RiskItem | null>(null);
+
+  const syncRisks = () => {
+    setIsSyncing(true);
+    setTimeout(() => {
+      setIsSyncing(false);
+      setRisks(INITIAL_RISKS);
+    }, 1500);
+  };
   
   // Custom new risk input fields
   const [showAddForm, setShowAddForm] = useState(false);
@@ -210,6 +219,25 @@ export default function RiskRegister({ cloudResources = [] }: { cloudResources?:
 
   return (
     <div className="cyber-grid-container">
+      <div className="cyber-panel" style={{ gridColumn: 'span 12', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h2 className="tech-font" style={{ color: '#fff', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <ShieldAlert style={{ color: '#00f2fe' }} /> ENTERPRISE RISK LEDGER
+          </h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '4px' }}>
+            Quantified cyber risk tracking and mitigation mapping.
+          </p>
+        </div>
+        <button 
+          className="cyber-btn"
+          style={{ padding: '8px 16px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+          onClick={syncRisks}
+          disabled={isSyncing}
+        >
+          {isSyncing ? 'SYNCING RISKS...' : 'PULL LATEST RISKS'}
+        </button>
+      </div>
+
       {/* Quantitative Metrics Row */}
       <div style={{ gridColumn: 'span 12', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px' }}>
         <div className="cyber-panel" style={{ textAlign: 'center', padding: '15px' }}>

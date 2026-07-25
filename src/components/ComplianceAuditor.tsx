@@ -12,7 +12,7 @@ interface ComplianceAuditorProps {
 }
 
 export default function ComplianceAuditor({ onUpdateScore }: ComplianceAuditorProps) {
-  const [policyInput, setPolicyInput] = useState(POLICY_SAMPLES[0].text);
+  const [policyInput, setPolicyInput] = useState('');
   const [framework, setFramework] = useState('SOC 2');
   const [useLocalLLM, setUseLocalLLM] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

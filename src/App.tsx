@@ -12,33 +12,6 @@ import QuestionnaireAI from './components/QuestionnaireAI';
 import AccessGovernance from './components/AccessGovernance';
 import { Shield, Terminal, Layers, Activity, FileText, Mail, FileCheck, ShieldAlert, Cloud, HelpCircle, Users } from 'lucide-react';
 
-const INITIAL_ALERTS: SecurityEvent[] = [
-  {
-    id: 'ALT-1082',
-    timestamp: '09:42:03',
-    sourceIp: '192.168.1.142',
-    destIp: '10.0.0.12',
-    protocol: 'HTTP',
-    severity: 'high',
-    signature: 'SQL Injection: UNION SELECT column query on GET /api/users/profile',
-    mitreTechnique: 'T1190',
-    complianceFailure: 'SOC 2 CC7.1',
-    status: 'active'
-  },
-  {
-    id: 'ALT-2041',
-    timestamp: '09:43:21',
-    sourceIp: '185.220.101.4',
-    destIp: '10.0.0.5',
-    protocol: 'SSH',
-    severity: 'medium',
-    signature: 'SSH Brute Force: credential guessing attempts from invalid user profiles',
-    mitreTechnique: 'T1110.001',
-    complianceFailure: 'ISO 27001 A.9.4.3',
-    status: 'active'
-  }
-];
-
 export default function App() {
   const [view, setView] = useState<'landing' | 'hub'>(() => {
     return (localStorage.getItem('cs_view') as 'landing' | 'hub') || 'landing';
@@ -46,7 +19,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<string>(() => {
     return localStorage.getItem('cs_active_tab') || 'dashboard';
   });
-  const [alerts, setAlerts] = useState<SecurityEvent[]>(INITIAL_ALERTS);
+  const [alerts, setAlerts] = useState<SecurityEvent[]>([]);
   const [cloudResources, setCloudResources] = useState<CloudResource[]>([]);
   const [analyzerLogText, setAnalyzerLogText] = useState<string>('');
   const [currentTime, setCurrentTime] = useState<string>('');

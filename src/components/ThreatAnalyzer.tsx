@@ -11,7 +11,7 @@ interface ThreatAnalyzerProps {
 }
 
 export default function ThreatAnalyzer({ initialLogText }: ThreatAnalyzerProps) {
-  const [logInput, setLogInput] = useState(initialLogText || LOG_SAMPLES[0].text);
+  const [logInput, setLogInput] = useState(initialLogText || '');
   
   const [useLocalLLM, setUseLocalLLM] = useState(false);
   const [loadStatus, setLoadStatus] = useState<LoadProgress | null>(null);
