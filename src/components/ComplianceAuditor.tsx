@@ -159,6 +159,7 @@ export default function ComplianceAuditor({ onUpdateScore }: ComplianceAuditorPr
             <option value="ISO 27001">ISO/IEC 27001 (Information Security Management)</option>
             <option value="HIPAA">HIPAA (Security Safeguards 45 CFR)</option>
             <option value="GDPR">GDPR (Data Protection Safeguards)</option>
+            <option value="DPDPA">DPDPA (Digital Personal Data Protection Act)</option>
           </select>
         </div>
 

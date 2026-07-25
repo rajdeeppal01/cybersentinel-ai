@@ -7,7 +7,9 @@ import RiskRegister from './components/RiskRegister';
 import PhishingGuard from './components/PhishingGuard';
 import AttackSandbox from './components/AttackSandbox';
 import IncidentResponse from './components/IncidentResponse';
-import { Shield, Terminal, Layers, Activity, FileText, Mail, FileCheck, ShieldAlert } from 'lucide-react';
+import CloudPosture from './components/CloudPosture';
+import QuestionnaireAI from './components/QuestionnaireAI';
+import { Shield, Terminal, Layers, Activity, FileText, Mail, FileCheck, ShieldAlert, Cloud, HelpCircle } from 'lucide-react';
 
 const INITIAL_ALERTS: SecurityEvent[] = [
   {
@@ -269,6 +271,22 @@ export default function App() {
                   <FileCheck style={{ width: '14px', height: '14px' }} /> GRC Auditor
                 </span>
               </button>
+              <button 
+                className={`cyber-tab ${activeTab === 'cloud' ? 'active' : ''}`}
+                onClick={() => setActiveTab('cloud')}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Cloud style={{ width: '14px', height: '14px' }} /> Cloud Posture
+                </span>
+              </button>
+              <button 
+                className={`cyber-tab ${activeTab === 'questionnaire' ? 'active' : ''}`}
+                onClick={() => setActiveTab('questionnaire')}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <HelpCircle style={{ width: '14px', height: '14px' }} /> AI Responder
+                </span>
+              </button>
               
               {role === 'ADMIN' && (
                 <button 
@@ -323,6 +341,14 @@ export default function App() {
 
             <div style={{ display: activeTab === 'risks' ? 'block' : 'none' }}>
               <RiskRegister />
+            </div>
+
+            <div style={{ display: activeTab === 'cloud' ? 'block' : 'none' }}>
+              <CloudPosture />
+            </div>
+
+            <div style={{ display: activeTab === 'questionnaire' ? 'block' : 'none' }}>
+              <QuestionnaireAI />
             </div>
 
             <div style={{ display: activeTab === 'sandbox' ? 'block' : 'none' }}>
