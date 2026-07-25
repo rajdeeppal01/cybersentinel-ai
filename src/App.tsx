@@ -7,9 +7,10 @@ import RiskRegister from './components/RiskRegister';
 import PhishingGuard from './components/PhishingGuard';
 import AttackSandbox from './components/AttackSandbox';
 import IncidentResponse from './components/IncidentResponse';
-import CloudPosture from './components/CloudPosture';
+import CloudPosture, { CloudResource, MOCK_RESOURCES } from './components/CloudPosture';
 import QuestionnaireAI from './components/QuestionnaireAI';
-import { Shield, Terminal, Layers, Activity, FileText, Mail, FileCheck, ShieldAlert, Cloud, HelpCircle } from 'lucide-react';
+import AccessGovernance from './components/AccessGovernance';
+import { Shield, Terminal, Layers, Activity, FileText, Mail, FileCheck, ShieldAlert, Cloud, HelpCircle, Users } from 'lucide-react';
 
 const INITIAL_ALERTS: SecurityEvent[] = [
   {
@@ -46,6 +47,7 @@ export default function App() {
     return localStorage.getItem('cs_active_tab') || 'dashboard';
   });
   const [alerts, setAlerts] = useState<SecurityEvent[]>(INITIAL_ALERTS);
+  const [cloudResources, setCloudResources] = useState<CloudResource[]>(MOCK_RESOURCES);
   const [analyzerLogText, setAnalyzerLogText] = useState<string>('');
   const [currentTime, setCurrentTime] = useState<string>('');
   const [copied, setCopied] = useState(false);
@@ -98,7 +100,19 @@ export default function App() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Login bypassed per user request
+  const handleCloudRemediate = (id: string) => {
+    setCloudResources(prev => prev.map(res => 
+      res.id === id ? { ...res, status: 'REMEDIATED' } : res
+    ));
+  };
+
+  const handleCloudAcceptRisk = (id: string, justification: string) => {
+    setCloudResources(prev => prev.map(res => 
+      res.id === id ? { ...res, status: 'ACCEPTED_RISK', justification } : res
+    ));
+  };
+
+  if (view === 'landing') { /* Login bypassed per user request */ }
 
   return (
     <div style={{ minHeight: '100vh', position: 'relative', overflowX: 'hidden', background: '#030408' }}>
@@ -287,6 +301,14 @@ export default function App() {
                   <HelpCircle style={{ width: '14px', height: '14px' }} /> AI Responder
                 </span>
               </button>
+              <button 
+                className={`cyber-tab ${activeTab === 'governance' ? 'active' : ''}`}
+                onClick={() => setActiveTab('governance')}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Users style={{ width: '14px', height: '14px' }} /> IAM Governance
+                </span>
+              </button>
               
               {role === 'ADMIN' && (
                 <button 
@@ -340,15 +362,23 @@ export default function App() {
             </div>
 
             <div style={{ display: activeTab === 'risks' ? 'block' : 'none' }}>
-              <RiskRegister />
+              <RiskRegister cloudResources={cloudResources} />
             </div>
 
             <div style={{ display: activeTab === 'cloud' ? 'block' : 'none' }}>
-              <CloudPosture />
+              <CloudPosture 
+                resources={cloudResources} 
+                onRemediate={handleCloudRemediate}
+                onAcceptRisk={handleCloudAcceptRisk}
+              />
             </div>
 
             <div style={{ display: activeTab === 'questionnaire' ? 'block' : 'none' }}>
               <QuestionnaireAI />
+            </div>
+
+            <div style={{ display: activeTab === 'governance' ? 'block' : 'none' }}>
+              <AccessGovernance />
             </div>
 
             <div style={{ display: activeTab === 'sandbox' ? 'block' : 'none' }}>

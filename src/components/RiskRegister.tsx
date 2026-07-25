@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Shield, ShieldAlert, Sparkles, X, Plus, LayoutGrid, Loader2, Cpu, AlertCircle } from 'lucide-react';
+import { Shield, ShieldAlert, Sparkles, X, Plus, LayoutGrid, Loader2, Cpu, AlertCircle, DollarSign } from 'lucide-react';
 import { generateMitigationWithBackend } from '../utils/onlineEngine';
 import { generateMitigationWithLLM, LoadProgress } from '../utils/webllmEngine';
+import { CloudResource } from './CloudPosture';
 
 interface RiskItem {
   id: string;
@@ -103,7 +104,7 @@ const INITIAL_RISKS: RiskItem[] = [
   }
 ];
 
-export default function RiskRegister() {
+export default function RiskRegister({ cloudResources = [] }: { cloudResources?: CloudResource[] }) {
   const [risks, setRisks] = useState<RiskItem[]>(INITIAL_RISKS);
   const [selectedRisk, setSelectedRisk] = useState<RiskItem | null>(null);
   
@@ -192,8 +193,44 @@ export default function RiskRegister() {
     return '#38f9d7';                  // low green
   };
 
+  // Dynamic FAIR ALE Calculations
+  const openCloudRisks = cloudResources.filter(r => r.status === 'OPEN');
+  const cloudRiskALE = openCloudRisks.reduce((total, r) => {
+    return total + (r.severity === 'HIGH' ? 50000 : r.severity === 'MEDIUM' ? 10000 : 2000);
+  }, 0);
+
+  const baseALE = risks.reduce((total, r) => {
+    const isControlled = r.status === 'Controlled';
+    const activeScore = isControlled ? r.mitigation.residualScore : r.score;
+    // Map Qualitative score (1-25) to rough ALE (Score * $5,000)
+    return total + (activeScore * 5000);
+  }, 0);
+
+  const totalALE = baseALE + cloudRiskALE;
+
   return (
     <div className="cyber-grid-container">
+      {/* Quantitative Metrics Row */}
+      <div style={{ gridColumn: 'span 12', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px' }}>
+        <div className="cyber-panel" style={{ textAlign: 'center', padding: '15px' }}>
+          <div className="tech-font" style={{ fontSize: '0.7rem', color: 'var(--neon-green)' }}>TOTAL ENTERPRISE ALE</div>
+          <div className="tech-font" style={{ fontSize: '2rem', color: '#fff', marginTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <DollarSign size={28} /> {totalALE.toLocaleString()}
+          </div>
+        </div>
+        <div className="cyber-panel" style={{ textAlign: 'center', padding: '15px', border: cloudRiskALE > 0 ? '1px solid var(--neon-red)' : '' }}>
+          <div className="tech-font" style={{ fontSize: '0.7rem', color: 'var(--neon-red)' }}>CLOUD INFRASTRUCTURE ALE (FROM CSPM)</div>
+          <div className="tech-font" style={{ fontSize: '2rem', color: '#fff', marginTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <DollarSign size={28} /> {cloudRiskALE.toLocaleString()}
+          </div>
+        </div>
+        <div className="cyber-panel" style={{ textAlign: 'center', padding: '15px' }}>
+          <div className="tech-font" style={{ fontSize: '0.7rem', color: 'var(--neon-blue)' }}>TRADITIONAL ASSET ALE</div>
+          <div className="tech-font" style={{ fontSize: '2rem', color: '#fff', marginTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <DollarSign size={28} /> {baseALE.toLocaleString()}
+          </div>
+        </div>
+      </div>
       
       {/* 5x5 Likelihood / Impact Heat Map Grid */}
       <div className="cyber-panel" style={{ gridColumn: 'span 5', height: '450px', display: 'flex', flexDirection: 'column' }}>

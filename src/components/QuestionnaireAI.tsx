@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { HelpCircle, Send, Cpu, CheckCircle2, ShieldCheck, Database, FileText } from 'lucide-react';
+import { HelpCircle, Send, Cpu, CheckCircle2, ShieldCheck, Database, FileText, Paperclip, ExternalLink } from 'lucide-react';
 
 const MOCK_POLICIES = [
   { id: 'pol-1', name: 'Information Security Policy (ISO 27001)', icon: <ShieldCheck size={14} /> },
@@ -12,6 +12,7 @@ export default function QuestionnaireAI() {
   const [selectedPolicy, setSelectedPolicy] = useState('pol-2');
   const [isGenerating, setIsGenerating] = useState(false);
   const [response, setResponse] = useState('');
+  const [evidence, setEvidence] = useState<{name: string, type: string}[]>([]);
 
   const generateResponse = () => {
     if (!question.trim()) return;
@@ -22,6 +23,10 @@ export default function QuestionnaireAI() {
     setTimeout(() => {
       setIsGenerating(false);
       setResponse(`Based on our internal Data Encryption Standard (SOC 2), all customer data is encrypted at rest using AES-256 encryption managed via AWS KMS. Data in transit is secured using TLS 1.2 or higher for all external and internal communications. These encryption standards are reviewed annually and enforced automatically via our Cloud Security Posture Management (CSPM) tools. (Mapped to: SOC 2 CC6.1)`);
+      setEvidence([
+        { name: 'AWS_KMS_Config_Export.json', type: 'JSON' },
+        { name: 'SOC2_PenTest_Report_Q3.pdf', type: 'PDF' }
+      ]);
     }, 1500);
   };
 
@@ -130,6 +135,34 @@ export default function QuestionnaireAI() {
               <div style={{ background: 'rgba(57, 255, 20, 0.05)', border: '1px solid var(--neon-green)', padding: '12px', borderRadius: '4px', fontSize: '0.75rem', color: 'var(--neon-green)' }}>
                 <strong>Confidence: High</strong> — This response directly references controls mapped in the <em>Data Encryption Standard (SOC 2)</em> policy document.
               </div>
+              
+              {evidence.length > 0 && (
+                <div style={{ marginTop: '5px' }}>
+                  <h4 className="tech-font" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Paperclip size={12} /> ATTACHED EVIDENCE ARTIFACTS
+                  </h4>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    {evidence.map((file, idx) => (
+                      <div key={idx} style={{ 
+                        background: 'rgba(0, 240, 255, 0.05)', 
+                        border: '1px solid rgba(0, 240, 255, 0.2)', 
+                        padding: '8px 12px', 
+                        borderRadius: '4px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '8px',
+                        fontSize: '0.7rem',
+                        color: 'var(--neon-cyan)',
+                        cursor: 'pointer'
+                      }}>
+                        <FileText size={14} />
+                        {file.name}
+                        <ExternalLink size={12} style={{ marginLeft: '4px', opacity: 0.7 }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div style={{ display: 'flex', gap: '10px', marginTop: 'auto', paddingTop: '20px' }}>
                  <button className="cyber-btn cyber-btn-secondary" style={{ flex: 1 }} onClick={() => navigator.clipboard.writeText(response)}>
                    Copy to Clipboard

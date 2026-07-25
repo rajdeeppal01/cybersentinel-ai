@@ -1,18 +1,19 @@
 import { useState } from 'react';
 import { Cloud, ShieldAlert, CheckCircle, Server, Database, HardDrive, RefreshCcw } from 'lucide-react';
 
-interface CloudResource {
+export interface CloudResource {
   id: string;
   provider: 'AWS' | 'Azure' | 'GCP';
   resourceName: string;
   type: string;
   issue: string;
   severity: 'HIGH' | 'MEDIUM' | 'LOW';
-  status: 'OPEN' | 'REMEDIATED';
+  status: 'OPEN' | 'REMEDIATED' | 'ACCEPTED_RISK';
   mappedControl: string;
+  justification?: string;
 }
 
-const MOCK_RESOURCES: CloudResource[] = [
+export const MOCK_RESOURCES: CloudResource[] = [
   {
     id: 'res-aws-s3-1',
     provider: 'AWS',
@@ -55,9 +56,10 @@ const MOCK_RESOURCES: CloudResource[] = [
   }
 ];
 
-export default function CloudPosture() {
-  const [resources, setResources] = useState<CloudResource[]>(MOCK_RESOURCES);
+export default function CloudPosture({ resources, onRemediate, onAcceptRisk }: { resources: CloudResource[], onRemediate: (id: string) => void, onAcceptRisk: (id: string, justification: string) => void }) {
   const [isScanning, setIsScanning] = useState(false);
+  const [showAcceptModal, setShowAcceptModal] = useState<string | null>(null);
+  const [justification, setJustification] = useState('');
 
   const triggerScan = () => {
     setIsScanning(true);
@@ -67,10 +69,12 @@ export default function CloudPosture() {
     }, 2000);
   };
 
-  const remediateIssue = (id: string) => {
-    setResources(prev => prev.map(res => 
-      res.id === id ? { ...res, status: 'REMEDIATED' } : res
-    ));
+  const handleAcceptRisk = () => {
+    if (showAcceptModal && justification.trim()) {
+      onAcceptRisk(showAcceptModal, justification);
+      setShowAcceptModal(null);
+      setJustification('');
+    }
   };
 
   return (
@@ -101,8 +105,8 @@ export default function CloudPosture() {
         {[
           { label: 'TOTAL ASSETS MONITORED', value: '4,102' },
           { label: 'OPEN MISCONFIGURATIONS', value: resources.filter(r => r.status === 'OPEN').length },
-          { label: 'COMPLIANCE VIOLATIONS', value: resources.filter(r => r.status === 'OPEN').length },
-          { label: 'AUTO-REMEDIATED', value: resources.filter(r => r.status === 'REMEDIATED').length }
+          { label: 'AUTO-REMEDIATED', value: resources.filter(r => r.status === 'REMEDIATED').length },
+          { label: 'ACCEPTED RISKS', value: resources.filter(r => r.status === 'ACCEPTED_RISK').length }
         ].map((metric, i) => (
           <div key={i} className="cyber-panel" style={{ textAlign: 'center', padding: '15px' }}>
             <div className="tech-font" style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{metric.label}</div>
@@ -151,20 +155,34 @@ export default function CloudPosture() {
                   </div>
                 </td>
                 <td style={{ padding: '16px 12px' }}>
-                  <span className={`cyber-badge ${res.status === 'OPEN' ? 'cyber-badge-red' : 'cyber-badge-green'}`}>
+                  <span className={`cyber-badge ${res.status === 'OPEN' ? 'cyber-badge-red' : res.status === 'ACCEPTED_RISK' ? 'cyber-badge-yellow' : 'cyber-badge-green'}`}>
                     {res.status === 'OPEN' ? <ShieldAlert size={12} style={{ display: 'inline', marginRight: '4px' }}/> : <CheckCircle size={12} style={{ display: 'inline', marginRight: '4px' }}/>}
-                    {res.status}
+                    {res.status === 'ACCEPTED_RISK' ? 'ACCEPTED' : res.status}
                   </span>
+                  {res.status === 'ACCEPTED_RISK' && res.justification && (
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '4px', maxWidth: '150px' }}>
+                      Reason: {res.justification}
+                    </div>
+                  )}
                 </td>
                 <td style={{ padding: '16px 12px' }}>
                   {res.status === 'OPEN' && (
-                    <button 
-                      className="cyber-btn"
-                      style={{ padding: '4px 10px', fontSize: '0.7rem' }}
-                      onClick={() => remediateIssue(res.id)}
-                    >
-                      Remediate
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button 
+                        className="cyber-btn"
+                        style={{ padding: '4px 10px', fontSize: '0.7rem' }}
+                        onClick={() => onRemediate(res.id)}
+                      >
+                        Remediate
+                      </button>
+                      <button 
+                        className="cyber-btn cyber-btn-secondary"
+                        style={{ padding: '4px 10px', fontSize: '0.7rem' }}
+                        onClick={() => setShowAcceptModal(res.id)}
+                      >
+                        Accept Risk
+                      </button>
+                    </div>
                   )}
                 </td>
               </tr>
@@ -172,6 +190,29 @@ export default function CloudPosture() {
           </tbody>
         </table>
       </div>
+
+      {/* Accept Risk Modal */}
+      {showAcceptModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div className="cyber-panel" style={{ width: '400px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <h3 className="tech-font" style={{ color: 'var(--neon-yellow)' }}>ACCEPT RISK (EXCEPTION)</h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              Provide a business justification for accepting this cloud misconfiguration. This will be logged for audit purposes.
+            </p>
+            <textarea
+              className="cyber-input mono-font"
+              style={{ minHeight: '100px', fontSize: '0.8rem', padding: '10px' }}
+              placeholder="e.g. This bucket is intentionally public as it serves static website images."
+              value={justification}
+              onChange={(e) => setJustification(e.target.value)}
+            />
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' }}>
+              <button className="cyber-btn cyber-btn-secondary" onClick={() => setShowAcceptModal(null)}>Cancel</button>
+              <button className="cyber-btn cyber-btn-success" onClick={handleAcceptRisk} disabled={!justification.trim()}>Log Exception</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
