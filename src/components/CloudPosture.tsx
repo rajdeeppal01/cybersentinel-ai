@@ -56,7 +56,7 @@ export const MOCK_RESOURCES: CloudResource[] = [
   }
 ];
 
-export default function CloudPosture({ resources, onRemediate, onAcceptRisk }: { resources: CloudResource[], onRemediate: (id: string) => void, onAcceptRisk: (id: string, justification: string) => void }) {
+export default function CloudPosture({ resources, onRemediate, onAcceptRisk, onScan }: { resources: CloudResource[], onRemediate: (id: string) => void, onAcceptRisk: (id: string, justification: string) => void, onScan: () => void }) {
   const [isScanning, setIsScanning] = useState(false);
   const [showAcceptModal, setShowAcceptModal] = useState<string | null>(null);
   const [justification, setJustification] = useState('');
@@ -65,7 +65,7 @@ export default function CloudPosture({ resources, onRemediate, onAcceptRisk }: {
     setIsScanning(true);
     setTimeout(() => {
       setIsScanning(false);
-      // We could add more mock resources here to simulate a scan finding new things
+      onScan();
     }, 2000);
   };
 
@@ -103,7 +103,7 @@ export default function CloudPosture({ resources, onRemediate, onAcceptRisk }: {
       {/* Metrics Row */}
       <div style={{ gridColumn: 'span 12', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px' }}>
         {[
-          { label: 'TOTAL ASSETS MONITORED', value: '4,102' },
+          { label: 'TOTAL ASSETS MONITORED', value: resources.length > 0 ? '4,102' : '0' },
           { label: 'OPEN MISCONFIGURATIONS', value: resources.filter(r => r.status === 'OPEN').length },
           { label: 'AUTO-REMEDIATED', value: resources.filter(r => r.status === 'REMEDIATED').length },
           { label: 'ACCEPTED RISKS', value: resources.filter(r => r.status === 'ACCEPTED_RISK').length }

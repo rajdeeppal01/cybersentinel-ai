@@ -47,7 +47,7 @@ export default function App() {
     return localStorage.getItem('cs_active_tab') || 'dashboard';
   });
   const [alerts, setAlerts] = useState<SecurityEvent[]>(INITIAL_ALERTS);
-  const [cloudResources, setCloudResources] = useState<CloudResource[]>(MOCK_RESOURCES);
+  const [cloudResources, setCloudResources] = useState<CloudResource[]>([]);
   const [analyzerLogText, setAnalyzerLogText] = useState<string>('');
   const [currentTime, setCurrentTime] = useState<string>('');
   const [copied, setCopied] = useState(false);
@@ -369,6 +369,7 @@ export default function App() {
                 resources={cloudResources} 
                 onRemediate={handleCloudRemediate}
                 onAcceptRisk={handleCloudAcceptRisk}
+                onScan={() => setCloudResources(MOCK_RESOURCES)}
               />
             </div>
 
