@@ -10,7 +10,10 @@ import IncidentResponse from './components/IncidentResponse';
 import CloudPosture, { CloudResource, MOCK_RESOURCES } from './components/CloudPosture';
 import QuestionnaireAI from './components/QuestionnaireAI';
 import AccessGovernance from './components/AccessGovernance';
-import { Shield, Terminal, Layers, Activity, FileText, Mail, FileCheck, ShieldAlert, Cloud, HelpCircle, Users } from 'lucide-react';
+import Auth from './components/Auth';
+import { supabase } from './lib/supabase';
+import { Session } from '@supabase/supabase-js';
+import { Shield, Terminal, Layers, Activity, FileText, Mail, FileCheck, ShieldAlert, Cloud, HelpCircle, Users, LogOut } from 'lucide-react';
 
 export default function App() {
   const [view, setView] = useState<'landing' | 'hub'>(() => {
@@ -30,8 +33,23 @@ export default function App() {
     'GDPR': 0,
     'HIPAA': 0
   });
+  const [session, setSession] = useState<Session | null>(null);
 
   const role = 'ADMIN';
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('cs_view', view);
@@ -128,7 +146,9 @@ export default function App() {
         </svg>
       </div>
 
-      {view === 'landing' ? (
+      {!session ? (
+        <Auth />
+      ) : view === 'landing' ? (
         /* View: Landing Page (Skiper7 style) */
         <div className="landing-container" style={{ background: 'transparent' }}>
           
@@ -141,9 +161,14 @@ export default function App() {
             <div style={{ display: 'flex', gap: '20px', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>
               {/* Removed navigation links per user request */}
             </div>
-            <button className="cyber-btn" style={{ padding: '8px 18px', fontSize: '0.75rem' }} onClick={() => setView('hub')}>
-              Go to Hub
-            </button>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button className="cyber-btn" style={{ padding: '8px 18px', fontSize: '0.75rem' }} onClick={() => setView('hub')}>
+                Go to Hub
+              </button>
+              <button className="cyber-btn cyber-btn-secondary" style={{ padding: '8px 18px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => supabase.auth.signOut()}>
+                <LogOut size={14} /> Sign Out
+              </button>
+            </div>
           </header>
 
           {/* Main Landing Hero Content */}
@@ -214,6 +239,10 @@ export default function App() {
               <Shield className="pulse-dot-cyan" style={{ color: 'var(--neon-cyan)', width: '28px', height: '28px' }} />
               <span>CYBERSENTINEL <span style={{ color: 'var(--neon-red)' }}>AI</span></span>
             </div>
+
+            <button className="cyber-btn cyber-btn-secondary" style={{ position: 'absolute', right: '20px', top: '15px', padding: '6px 12px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => supabase.auth.signOut()}>
+              <LogOut size={12} /> Sign Out
+            </button>
 
             {/* Tab Controls Bar */}
             <nav className="cyber-tabs">

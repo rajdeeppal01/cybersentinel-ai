@@ -13,6 +13,7 @@
     "@mlc-ai/web-llm": "^0.2.84",
     "@sentry/react": "^10.66.0",
     "@sentry/tracing": "^7.120.4",
+    "@supabase/supabase-js": "^2.116.0",
     "@types/leaflet": "^1.9.21",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
